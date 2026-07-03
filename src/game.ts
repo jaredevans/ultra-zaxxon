@@ -1,5 +1,5 @@
 import type { Entity, Ship } from './entities/types';
-import { createShip, updateShip, killShip, SCROLL_SPEED } from './entities/ship';
+import { createShip, updateShip, killShip, updateFuel, SCROLL_SPEED } from './entities/ship';
 import { createPools, firePlayer, updateProjectiles, type Pools } from './entities/projectiles';
 import { updateEnemies, type DifficultyTier } from './entities/enemies';
 import { createSpawner, type Spawner } from './world/spawner';
@@ -18,6 +18,8 @@ export interface Game {
   score: number;
   hasFloor: boolean;
   floorGaps: readonly { yStart: number; yEnd: number }[];
+  wallHeights: number[];
+  time: number;
   update(dt: number): void;
 }
 
@@ -34,12 +36,25 @@ export function createGame(): Game {
     score: 0,
     hasFloor: true,
     floorGaps: level1.floorGaps,
+    wallHeights: [],
+    time: 0,
 
     update(dt: number): void {
+      game.time += dt;
       // §11 order: input is sampled inside the helpers below
+      updateFuel(ship, dt, 1, false); // fuel (frozen flag becomes phase-aware in Task 12)
       updateShip(ship, dt, SCROLL_SPEED); // 2+3: scroll via ship.y, movement, clamps
+      // fuel impact death check (spec §7)
+      if (ship.fuel <= 0 && ship.z <= 1 && ship.state.kind === 'alive') killShip(ship);
       game.cameraY = ship.y;
       spawner.update(game.cameraY); // 4: spawn/despawn window
+      // rebuild wallHeights without allocation
+      game.wallHeights.length = 0;
+      for (const e of spawner.entities) {
+        if (e.live && e.kind === 'wall' && !game.wallHeights.includes(e.wallHeight)) {
+          game.wallHeights.push(e.wallHeight);
+        }
+      }
       // 5: entity AI — Task 10
       updateEnemies(spawner.entities, ship, pools, spawner, dt, TIER_1);
       if (isDown('Space')) firePlayer(pools, ship); // 6a
@@ -102,4 +117,6 @@ function collide(game: Game): void {
 }
 
 /** Kill hooks (fuel pickup, missile scoring, boss) grow in later tasks. */
-function onKill(_game: Game, _e: Entity): void {}
+function onKill(game: Game, e: Entity): void {
+  if (e.kind === 'fuelDrum') game.ship.fuel = Math.min(100, game.ship.fuel + 20);
+}

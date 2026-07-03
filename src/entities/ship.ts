@@ -14,6 +14,15 @@ export const SHIP_HD = 2;
 export const SHIP_HH = 1.4;
 export const EXPLODE_TIME = 0.8;
 export const RESPAWN_TIME = 2.0;
+export const FUEL_DRAIN = 1.2; // per second, tier 1
+export const LOW_FUEL = 20;
+export const FORCED_DESCENT_RATE = 14; // z-units/sec when fuel is empty
+
+/** frozen = boss fight (spec §7: fuel frozen during boss). */
+export function updateFuel(ship: Ship, dt: number, drainMul: number, frozen: boolean): void {
+  if (ship.state.kind !== 'alive' || frozen) return;
+  ship.fuel = Math.max(0, ship.fuel - FUEL_DRAIN * drainMul * dt);
+}
 
 export function createShip(): Ship {
   return {
@@ -51,7 +60,16 @@ export function updateShip(ship: Ship, dt: number, scrollSpeed: number): void {
   if (settings.invertY) dz = -dz;
 
   ship.x = Math.min(X_MAX, Math.max(X_MIN, ship.x + dx * X_SPEED * dt));
-  ship.z = Math.min(Z_MAX, Math.max(Z_MIN, ship.z + dz * Z_SPEED * dt));
+  if (ship.fuel <= 0) {
+    // forced descent: lateral control only, sink until impact (spec §7)
+    ship.z -= FORCED_DESCENT_RATE * dt;
+    if (ship.z <= 0) {
+      ship.z = 1;
+      // impact — caller's collision/death path fires via killShip below
+    }
+  } else {
+    ship.z = Math.min(Z_MAX, Math.max(Z_MIN, ship.z + dz * Z_SPEED * dt));
+  }
   ship.bank = dx as -1 | 0 | 1;
 
   if (ship.fireCooldown > 0) ship.fireCooldown -= dt;
@@ -64,4 +82,5 @@ export function killShip(ship: Ship): void {
   ship.lives -= 1;
   ship.x = 50;
   ship.z = 50; // y is NOT rewound (spec §3.3)
+  ship.fuel = 100; // refuel on any death — prevents fuel-empty respawn loop (spec §7)
 }

@@ -4,6 +4,8 @@ import { loadSettings } from './settings';
 import { initAtlas } from './render/sprites';
 import { createRenderer, VIEW_W, VIEW_H } from './render/renderer';
 import { createGame } from './game';
+import { drawHud } from './render/hud';
+import { LOW_FUEL } from './entities/ship';
 
 const canvas = document.querySelector<HTMLCanvasElement>('#game');
 if (!canvas) throw new Error('missing #game canvas');
@@ -31,7 +33,7 @@ const game = createGame();
 
 startLoop(
   (dt) => game.update(dt),
-  (alpha) =>
+  (alpha) => {
     renderer.render(
       {
         ship: game.ship,
@@ -43,5 +45,15 @@ startLoop(
         floorGaps: game.floorGaps,
       },
       alpha,
-    ),
+    );
+    drawHud(ctx, {
+      fuel: game.ship.fuel,
+      lowFuel: game.ship.fuel <= LOW_FUEL,
+      score: game.score,
+      lives: game.ship.lives,
+      shipZ: game.ship.z,
+      wallHeights: game.wallHeights,
+      t: game.time,
+    });
+  },
 );
