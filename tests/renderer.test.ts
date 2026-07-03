@@ -181,6 +181,42 @@ describe('renderer draws live impact bursts', () => {
     expect(log2).toContain('fill:#3a3a4c');
   });
 
+  it('renders zap holes without throwing (regression: TDZ const after return froze the game)', () => {
+    const log: string[] = [];
+    const renderer = createRenderer(stubCtx(log), recordingAtlas([]));
+    const hole: Entity = {
+      id: 3,
+      kind: 'zapHole',
+      x: 60,
+      y: 40,
+      z: 0.15,
+      hw: 3.5,
+      hd: 3.5,
+      hh: 0.3,
+      hp: Infinity,
+      points: 0,
+      live: true,
+      fireTimer: 0,
+      vx: 0,
+      vy: 0,
+      vz: 0,
+      wallHeight: 0,
+    };
+    const world: RenderWorld = {
+      ship: createShip(),
+      entities: [hole],
+      playerShots: [],
+      enemyShots: [],
+      cameraY: 0,
+      hasFloor: true,
+      time: 1.2,
+      floorGaps: [],
+      impacts: [],
+    };
+    expect(() => renderer.render(world, 0)).not.toThrow();
+    expect(log).toContain('fill:#0a1020'); // the hole's lip actually drew
+  });
+
   it('dead impacts draw nothing', () => {
     const calls: [SpriteName, number][] = [];
     const renderer = createRenderer(stubCtx(), recordingAtlas(calls));

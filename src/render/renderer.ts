@@ -56,6 +56,11 @@ const MAX_ROLL = 0.55;
 
 const SCENERY: readonly SpriteName[] = ['hangar', 'tower', 'silo', 'antenna', 'bunker'];
 
+// NOTE: consts used by the hoisted draw functions below MUST live at module
+// scope — inside createRenderer they'd sit after its `return` and never
+// initialize (TDZ), throwing on first use and killing the rAF loop.
+const HOLE_PULSE = ['#16306e', '#2f5cc4', '#6b97f2', '#d7e6ff'] as const;
+
 // items[] is reused across frames (the array itself is not reallocated).
 // Per-frame DrawItem closures ARE allocated here — intentional:
 // the no-allocation constraint applies to update() only, not the render path.
@@ -446,8 +451,6 @@ export function createRenderer(ctx: CanvasRenderingContext2D, atlas: Atlas) {
     }
     ctx.closePath();
   }
-
-  const HOLE_PULSE = ['#16306e', '#2f5cc4', '#6b97f2', '#d7e6ff'] as const;
 
   function drawZapHole(e: Entity, cameraY: number, time: number): void {
     p.x = e.x;
