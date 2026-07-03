@@ -428,29 +428,41 @@ export function createRenderer(ctx: CanvasRenderingContext2D, atlas: Atlas) {
     tri(pt(SHIP_MODEL.canL), pt(SHIP_MODEL.canR), pt(SHIP_MODEL.canF), '#70c8ff');
   }
 
-  /** Pulsing blue/white Tesla pit: dark pixel-ellipse mouth, glowing rim, breathing core. */
+  /**
+   * Pulsing Tesla pit, drawn as a floor-aligned isometric ellipse: a world
+   * circle at z=0 projected through the same transform as the floor tiles.
+   * A world offset (dx, dy) maps to screen Δ((dx+dy)·TILE_W/2, (dx−dy)·TILE_H/2).
+   */
+  function holePath(sx: number, sy: number, r: number, yOff: number): void {
+    ctx.beginPath();
+    for (let k = 0; k < 12; k++) {
+      const a = (k / 12) * Math.PI * 2;
+      const dx = r * Math.cos(a);
+      const dy = r * Math.sin(a);
+      const px = sx + (dx + dy) * (TILE_W / 2);
+      const py = sy + (dx - dy) * (TILE_H / 2) + yOff;
+      if (k === 0) ctx.moveTo(px, py);
+      else ctx.lineTo(px, py);
+    }
+    ctx.closePath();
+  }
+
+  const HOLE_PULSE = ['#16306e', '#2f5cc4', '#6b97f2', '#d7e6ff'] as const;
+
   function drawZapHole(e: Entity, cameraY: number, time: number): void {
     p.x = e.x;
     p.y = e.y;
     p.z = 0;
     const s = project(p, cameraY);
-    const pulse = 0.5 + 0.5 * Math.sin(time * 5 + e.id * 1.7); // 0..1, per-hole phase
-    // pit mouth (pixel-art ellipse rows)
-    ctx.fillStyle = '#04060c';
-    for (let py = -6; py <= 6; py += 2) {
-      const half = Math.floor(14 * Math.sqrt(1 - (py / 7) * (py / 7)));
-      ctx.fillRect(s.sx - half, s.sy + py, half * 2, 2);
-    }
-    // pulsing rim
-    ctx.fillStyle = pulse > 0.55 ? '#e8f4ff' : '#3a6cf0';
-    ctx.fillRect(s.sx - 14, s.sy - 1, 4, 2);
-    ctx.fillRect(s.sx + 10, s.sy - 1, 4, 2);
-    ctx.fillRect(s.sx - 6, s.sy - 7, 12, 2);
-    ctx.fillRect(s.sx - 6, s.sy + 5, 12, 2);
-    // breathing core
-    const core = 2 + Math.round(pulse * 4);
-    ctx.fillStyle = pulse > 0.55 ? '#ffffff' : '#6a9cff';
-    ctx.fillRect(s.sx - core / 2, s.sy - core / 2, core, core);
+    const pulse = 0.5 + 0.5 * Math.sin(time * 4 + e.id * 1.7); // 0..1, per-hole phase
+    // protruding lip: darker, slightly larger, dropped a touch below the cover
+    ctx.fillStyle = '#0a1020';
+    holePath(s.sx, s.sy, 4.4, 2);
+    ctx.fill();
+    // the full cover pulses through discrete blue → white steps (pixel-art friendly)
+    ctx.fillStyle = HOLE_PULSE[Math.min(3, Math.floor(pulse * 4))] ?? '#2f5cc4';
+    holePath(s.sx, s.sy, 3.6, 0);
+    ctx.fill();
   }
 
   /** Jagged lightning column from the floor at (x, y) up to z = im.z. */
