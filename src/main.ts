@@ -1,10 +1,11 @@
 import { startLoop } from './loop';
-import { initInput } from './input';
+import { initInput, isDown } from './input';
 import { loadSettings } from './settings';
 import { initAtlas } from './render/sprites';
 import { createRenderer, VIEW_W, VIEW_H } from './render/renderer';
 import { createShip, updateShip, SCROLL_SPEED } from './entities/ship';
-import type { Entity, Projectile } from './entities/types';
+import type { Entity } from './entities/types';
+import { createPools, firePlayer, updateProjectiles } from './entities/projectiles';
 
 const canvas = document.querySelector<HTMLCanvasElement>('#game');
 if (!canvas) throw new Error('missing #game canvas');
@@ -30,15 +31,28 @@ const atlas = initAtlas();
 const renderer = createRenderer(ctx, atlas);
 const ship = createShip();
 const entities: Entity[] = [];
-const projectiles: Projectile[] = [];
+const pools = createPools();
 let cameraY = 0;
 
 startLoop(
   (dt) => {
     updateShip(ship, dt, SCROLL_SPEED);
+    if (isDown('Space')) firePlayer(pools, ship);
+    updateProjectiles(pools, dt, cameraY);
     cameraY = ship.y;
   },
   (alpha) => {
-    renderer.render({ ship, entities, projectiles, cameraY, hasFloor: true, floorGaps: [] }, alpha);
+    renderer.render(
+      {
+        ship,
+        entities,
+        playerShots: pools.player,
+        enemyShots: pools.enemy,
+        cameraY,
+        hasFloor: true,
+        floorGaps: [],
+      },
+      alpha,
+    );
   },
 );

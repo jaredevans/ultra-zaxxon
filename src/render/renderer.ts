@@ -10,7 +10,8 @@ export const ORIGIN = { x: VIEW_W / 2 + 140, y: 150 }; // tuned so corridor x∈
 export interface RenderWorld {
   ship: Ship;
   entities: readonly Entity[];
-  projectiles: readonly Projectile[];
+  playerShots: readonly Projectile[];
+  enemyShots: readonly Projectile[];
   cameraY: number;
   hasFloor: boolean;
   floorGaps: readonly { yStart: number; yEnd: number }[];
@@ -138,14 +139,26 @@ export function createRenderer(ctx: CanvasRenderingContext2D, atlas: Atlas) {
         });
       }
 
-      for (const pr of w.projectiles) {
+      for (const pr of w.playerShots) {
         if (!pr.live) continue;
         items.push({
           key: depthKey(pr),
           id: 100000,
           draw: () => {
             const s = project(pr, w.cameraY);
-            ctx.fillStyle = pr.owner === 'player' ? '#80ffff' : '#ff6060';
+            ctx.fillStyle = '#80ffff';
+            ctx.fillRect(s.sx - 2, s.sy - 4, 4, 8);
+          },
+        });
+      }
+      for (const pr of w.enemyShots) {
+        if (!pr.live) continue;
+        items.push({
+          key: depthKey(pr),
+          id: 100000,
+          draw: () => {
+            const s = project(pr, w.cameraY);
+            ctx.fillStyle = '#ff6060';
             ctx.fillRect(s.sx - 2, s.sy - 4, 4, 8);
           },
         });
