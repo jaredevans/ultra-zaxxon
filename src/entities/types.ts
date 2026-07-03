@@ -38,7 +38,9 @@ export type EntityKind =
   | 'boss'
   | 'bossCore' // Zaxxon weak point (small AABB)
   | 'zapHole' // pulsing floor pit; bolts any ship overhead regardless of altitude
-  | 'raider'; // parked ground ship: takes off if passed, loops ahead, attacks head-on
+  | 'raider' // parked ground ship: takes off if passed, loops ahead, attacks head-on
+  | 'cannon' // ground mortar: lobs a ballistic bomb at the player's predicted position
+  | 'bomb'; // the cannon's lobbed shell — gravity arc, shootable, bursts on the floor
 
 export interface Entity extends AABB {
   id: number;

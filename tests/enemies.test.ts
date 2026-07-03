@@ -74,6 +74,49 @@ describe('raider life cycle: parked → overtake → attack run → exit', () =>
   });
 });
 
+describe('cannon lobs predictive bombs', () => {
+  it('the parabolic bomb intercepts a straight-flying player', () => {
+    const spawner = createSpawner([]);
+    const pools = createPools();
+    const ship = createShip();
+    ship.x = 50;
+    ship.y = 0;
+    ship.z = 30;
+    ship.bank = 0;
+    ship.pitch = 0;
+    const scroll = 30;
+    expect(spawner.spawn('cannon', 30, 50, 5)).not.toBeNull(); // 50 ahead of the ship
+
+    updateEnemies(spawner.entities, ship, pools, spawner, DT, TIER, undefined, scroll);
+    const bomb = spawner.entities.find((e) => e.live && e.kind === 'bomb');
+    expect(bomb).toBeDefined();
+    expect(bomb!.vz).toBeGreaterThan(0); // lobbed upward — an arc, not a dart
+
+    // fly straight: the bomb must come down on the ship's future position
+    let minDist = Infinity;
+    for (let t = 0; t < 2.5 && bomb!.live; t += DT) {
+      ship.y += scroll * DT;
+      updateEnemies(spawner.entities, ship, pools, spawner, DT, TIER, undefined, scroll);
+      const d = Math.hypot(bomb!.x - ship.x, bomb!.y - ship.y, bomb!.z - ship.z);
+      minDist = Math.min(minDist, d);
+    }
+    expect(minDist).toBeLessThan(4);
+  });
+
+  it('a bomb that misses bursts out on the ground (z <= 0) instead of flying forever', () => {
+    const spawner = createSpawner([]);
+    const pools = createPools();
+    const ship = createShip();
+    ship.y = -100; // far away — nothing to hit
+    const bomb = spawner.spawn('bomb', 50, 60, 10)!;
+    bomb.vz = -5;
+    for (let i = 0; i < 300 && bomb.live; i++) {
+      updateEnemies(spawner.entities, ship, pools, spawner, DT, TIER);
+    }
+    expect(bomb.live).toBe(false);
+  });
+});
+
 describe('boss maneuvers', () => {
   it('sweeps laterally and bobs in altitude even when the player holds still', () => {
     const spawner = createSpawner([]);

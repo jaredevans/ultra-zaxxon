@@ -1,5 +1,6 @@
 import type { Entity, Ship } from './types';
 import { fireEnemy, type Pools } from './projectiles';
+import { X_SPEED, Z_SPEED, X_MIN, X_MAX, Z_MIN, Z_MAX } from './ship';
 import type { Spawner } from '../world/spawner';
 
 export interface DifficultyTier {
@@ -26,6 +27,13 @@ const RAIDER_ATTACK_SPEED = 55; // world u/s on the head-on run
 const RAIDER_SIDE_OFFSET = 14; // lateral berth while sweeping past the ship
 const RAIDER_INTERVAL = 1.8; // shot cadence during the attack run
 const RAIDER_AIR_POINTS = 300;
+// cannon: ground mortar lobbing a ballistic bomb at the player's PREDICTED
+// position — lead = current velocity (scroll + smoothed bank/pitch input)
+const CANNON_RANGE = 85; // fires while the player is 25..85 behind it
+const CANNON_NEAR = 25;
+const CANNON_INTERVAL = 2.6;
+const BOMB_FLIGHT_TIME = 1.5; // seconds from muzzle to predicted intercept
+const BOMB_GRAVITY = 34; // world u/s²
 
 /** Module-level steer helper — avoids a per-missile closure allocation each frame. */
 function steer(cur: number, target: number, maxDelta: number): number {
@@ -41,6 +49,7 @@ export function updateEnemies(
   dt: number,
   tier: DifficultyTier,
   onShot?: () => void,
+  scrollSpeed = 0, // player's forward speed — cannons lead their bombs with it
 ): void {
   for (const e of entities) {
     if (!e.live) continue;
@@ -148,6 +157,36 @@ export function updateEnemies(
         }
         // stage 3: keep flying downfield; the despawn margin reaps it
         e.y -= RAIDER_ATTACK_SPEED * dt;
+        break;
+      }
+      case 'cannon': {
+        const dy = e.y - ship.y;
+        if (dy < CANNON_NEAR || dy > CANNON_RANGE) break;
+        e.fireTimer -= dt;
+        if (e.fireTimer <= 0) {
+          e.fireTimer = CANNON_INTERVAL / tier.fireRateMul;
+          // predicted intercept: current velocity held for the flight time
+          const T = BOMB_FLIGHT_TIME;
+          const tx = Math.min(X_MAX, Math.max(X_MIN, ship.x + ship.bank * X_SPEED * T));
+          const ty = ship.y + scrollSpeed * T;
+          const tz = Math.min(Z_MAX, Math.max(Z_MIN, ship.z + ship.pitch * Z_SPEED * T));
+          const b = spawner.spawn('bomb', e.x, e.y - e.hd, e.z + 2);
+          if (b) {
+            // ballistic solve: arrive at (tx,ty,tz) after T under BOMB_GRAVITY
+            b.vx = (tx - b.x) / T;
+            b.vy = (ty - b.y) / T;
+            b.vz = (tz - b.z) / T + 0.5 * BOMB_GRAVITY * T;
+            onShot?.();
+          }
+        }
+        break;
+      }
+      case 'bomb': {
+        e.vz -= BOMB_GRAVITY * dt;
+        e.x += e.vx * dt;
+        e.y += e.vy * dt;
+        e.z += e.vz * dt;
+        if (e.z <= 0 || e.y < ship.y - 25) e.live = false; // ground burst or long miss
         break;
       }
       case 'parkedPlane': {

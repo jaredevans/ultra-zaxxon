@@ -29,6 +29,8 @@ const KIND_SPRITE: Partial<Record<Entity['kind'], SpriteName>> = {
   parkedPlane: 'plane',
   fighter: 'fighter',
   raider: 'raider',
+  cannon: 'cannon',
+  bomb: 'bomb',
   missile: 'missile',
   boss: 'boss',
   bossCore: 'bossCore',

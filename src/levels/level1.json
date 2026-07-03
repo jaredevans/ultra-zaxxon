@@ -90,6 +90,11 @@
       "height": 45
     },
     {
+      "type": "cannon",
+      "y": 700,
+      "x": 55
+    },
+    {
       "type": "turret",
       "y": 730,
       "x": 30
@@ -170,6 +175,11 @@
       "x": 62
     },
     {
+      "type": "cannon",
+      "y": 1330,
+      "x": 20
+    },
+    {
       "type": "zapHole",
       "y": 1350,
       "x": 35
@@ -222,6 +232,11 @@
       "type": "turret",
       "y": 1640,
       "x": 80
+    },
+    {
+      "type": "cannon",
+      "y": 1660,
+      "x": 55
     },
     {
       "type": "barrier",
@@ -298,6 +313,11 @@
       "x": 65
     },
     {
+      "type": "cannon",
+      "y": 3000,
+      "x": 40
+    },
+    {
       "type": "fuelDrum",
       "y": 3020,
       "x": 55
@@ -335,6 +355,11 @@
       "type": "missileLauncher",
       "y": 3160,
       "x": 30
+    },
+    {
+      "type": "cannon",
+      "y": 3180,
+      "x": 60
     },
     {
       "type": "radar",

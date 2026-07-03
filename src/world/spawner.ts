@@ -29,6 +29,8 @@ const DEFS: Record<string, KindDef> = {
   zapHole: { hw: 3.5, hd: 3.5, hh: 0.3, hp: Infinity, points: 0 },
   // parked profile; takeoff (enemies.ts) switches it to an airborne hitbox + 300 pts
   raider: { hw: 4, hd: 4, hh: 5, hp: 1, points: 150 },
+  cannon: { hw: 3, hd: 3, hh: 5, hp: 1, points: 250 },
+  bomb: { hw: 1.5, hd: 1.5, hh: 1.5, hp: 1, points: 100 },
 };
 
 export interface Spawner {

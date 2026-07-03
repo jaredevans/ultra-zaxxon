@@ -91,8 +91,9 @@ export function createGame(): Game {
     update(dt: number): void {
       game.time += dt;
       // §11 order: input is sampled inside the helpers below
+      const scrollSpeed = phases.scrollPaused ? 0 : SCROLL_SPEED * phases.tier.scrollMul;
       updateFuel(ship, dt, phases.tier.fuelDrainMul, phases.fuelFrozen); // fuel drain (frozen during boss)
-      updateShip(ship, dt, phases.scrollPaused ? 0 : SCROLL_SPEED * phases.tier.scrollMul); // 2+3: scroll via ship.y, movement, clamps
+      updateShip(ship, dt, scrollSpeed); // 2+3: scroll via ship.y, movement, clamps
       // fuel impact death check (spec §7)
       if (ship.fuel <= 0 && ship.z <= 1 && ship.state.kind === 'alive') {
         killShip(ship);
@@ -113,7 +114,16 @@ export function createGame(): Game {
         }
       }
       // 5: entity AI — Task 10
-      updateEnemies(spawner.entities, ship, pools, spawner, dt, phases.tier, onEnemyShot);
+      updateEnemies(
+        spawner.entities,
+        ship,
+        pools,
+        spawner,
+        dt,
+        phases.tier,
+        onEnemyShot,
+        scrollSpeed,
+      );
       if (isDown('Space') && firePlayer(pools, ship)) play('laser'); // 6a
       updateProjectiles(pools, dt, game.cameraY); // 6b: records yPrev first
       updateImpacts(game.impacts, dt);
