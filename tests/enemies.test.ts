@@ -58,17 +58,20 @@ describe('raider life cycle: parked → overtake → attack run → exit', () =>
     expect(raider.points).toBe(300);
   });
 
-  it('overtakes to well ahead, turns around, attacks, then exits downfield', () => {
+  it('overtakes, hovers at the far end for a few seconds, attacks, then exits', () => {
     const { spawner, pools, ship, raider } = setup();
     let reachedAhead = false;
     let fired = false;
-    for (let t = 0; t < 30 && raider.stage < 3; t += DT) {
+    let hoverTicks = 0;
+    for (let t = 0; t < 40 && raider.stage < 4; t += DT) {
       updateEnemies(spawner.entities, ship, pools, spawner, DT, TIER);
       if (raider.y > ship.y + 50) reachedAhead = true;
+      if (raider.stage === 2) hoverTicks++; // stage 2 = hovering
       if (pools.enemy.some((p) => p.live)) fired = true;
     }
     expect(reachedAhead).toBe(true); // swung around to the far end
-    expect(raider.stage).toBe(3); // completed the attack run and passed the player
+    expect(hoverTicks * DT).toBeGreaterThanOrEqual(2); // lingered menacingly ≥2s
+    expect(raider.stage).toBe(4); // completed the attack run and passed the player
     expect(fired).toBe(true); // shot at the player on the way in
     expect(raider.y).toBeLessThan(ship.y); // continuing downfield to despawn
   });

@@ -27,6 +27,7 @@ const RAIDER_ATTACK_SPEED = 55; // world u/s on the head-on run
 const RAIDER_SIDE_OFFSET = 14; // lateral berth while sweeping past the ship
 const RAIDER_INTERVAL = 1.8; // shot cadence during the attack run
 const RAIDER_AIR_POINTS = 300;
+const RAIDER_HOVER_TIME = 2.5; // seconds it lingers at the far end before diving
 // cannon: ground mortar lobbing a ballistic bomb at the player's PREDICTED
 // position — lead = current velocity (scroll + smoothed bank/pitch input)
 const CANNON_RANGE = 85; // fires while the player is 25..85 behind it
@@ -118,7 +119,8 @@ export function updateEnemies(
         break;
       }
       case 'raider': {
-        // stage 0: parked. stage 1: takeoff + overtake. stage 2: attack run. stage 3: exit.
+        // stage 0: parked. 1: takeoff + overtake. 2: hover at the far end.
+        // 3: attack run. 4: exit.
         if (e.stage === 0) {
           if (e.y < ship.y - RAIDER_PASS_MARGIN) {
             e.stage = 1;
@@ -136,12 +138,27 @@ export function updateEnemies(
           e.x += steer(e.x, lane, 40 * dt);
           if (e.y > ship.y + RAIDER_AHEAD_DIST) {
             e.stage = 2;
+            e.fireTimer = RAIDER_HOVER_TIME; // hover countdown
+          }
+          break;
+        }
+        if (e.stage === 2) {
+          // hover: hold station at the far end (match the player's scroll),
+          // weaving over the corridor while the countdown runs
+          e.y += scrollSpeed * dt;
+          e.vy += dt; // weave phase clock (vy is unused while hovering)
+          e.x += steer(e.x, ship.x + Math.sin(e.vy * 2.2) * 18, 26 * dt);
+          e.z += steer(e.z, ship.z, 18 * dt);
+          e.fireTimer -= dt;
+          if (e.fireTimer <= 0) {
+            e.stage = 3;
+            e.vy = 0; // back to drift semantics for later stages
             // fire early in the dive: the closing window is short (~0.5s in-game)
             e.fireTimer = 0.15;
           }
           break;
         }
-        if (e.stage === 2) {
+        if (e.stage === 3) {
           e.y -= RAIDER_ATTACK_SPEED * dt;
           e.x += steer(e.x, ship.x, 30 * dt);
           e.z += steer(e.z, ship.z, 25 * dt);
@@ -152,10 +169,10 @@ export function updateEnemies(
             fireEnemy(pools, e, 0, -TURRET_SHOT_SPEED * tier.shotSpeedMul, 0);
             onShot?.();
           }
-          if (e.y < ship.y - 8) e.stage = 3; // run complete — flew past the player
+          if (e.y < ship.y - 8) e.stage = 4; // run complete — flew past the player
           break;
         }
-        // stage 3: keep flying downfield; the despawn margin reaps it
+        // stage 4: keep flying downfield; the despawn margin reaps it
         e.y -= RAIDER_ATTACK_SPEED * dt;
         break;
       }
