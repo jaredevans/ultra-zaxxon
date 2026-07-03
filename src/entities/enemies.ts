@@ -46,6 +46,7 @@ export function updateEnemies(
         break;
       }
       case 'missileLauncher': {
+        // invariant: every spawner path resets fireTimer to 0; -1 means already fired
         if (e.fireTimer === 0 && e.y - ship.y < MISSILE_TRIGGER && e.y > ship.y) {
           e.fireTimer = -1; // one-shot latch: fired
           const m = spawner.spawn('missile', e.x, e.y - e.hd, 4);
