@@ -13,14 +13,14 @@ Open `http://localhost:5173` in a browser. The game boots immediately.
 
 ## Controls
 
-| Key | Action |
-|-----|--------|
-| Arrow Keys | Move ship (Left/Right/Up/Down) |
-| Space | Fire laser |
-| P | Pause / Resume |
-| I | Toggle invert-Y (up = climb vs. dive) |
-| M | Toggle sound on/off |
-| Enter | Start game / Confirm high-score entry |
+| Key        | Action                                |
+| ---------- | ------------------------------------- |
+| Arrow Keys | Move ship (Left/Right/Up/Down)        |
+| Space      | Fire laser                            |
+| P          | Pause / Resume                        |
+| I          | Toggle invert-Y (up = climb vs. dive) |
+| M          | Toggle sound on/off                   |
+| Enter      | Start game / Confirm high-score entry |
 
 ## Features
 
