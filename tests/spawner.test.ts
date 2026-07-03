@@ -42,5 +42,9 @@ describe('spawner', () => {
     expect(s.entities.filter((e) => e.live)).toHaveLength(0);
     s.update(200);
     expect(s.entities.filter((e) => e.live && e.kind === 'fuelDrum')).toHaveLength(1);
+    // offset: after reset(1000), drum originally at y=200 is now at y=1200
+    s.reset(1000);
+    s.update(1200);
+    expect(s.entities.filter((e) => e.live && e.kind === 'fuelDrum')).toHaveLength(1);
   });
 });

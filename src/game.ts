@@ -1,14 +1,13 @@
 import type { Entity, Ship } from './entities/types';
 import { createShip, updateShip, killShip, updateFuel, SCROLL_SPEED } from './entities/ship';
 import { createPools, firePlayer, updateProjectiles, type Pools } from './entities/projectiles';
-import { updateEnemies, type DifficultyTier } from './entities/enemies';
+import { updateEnemies } from './entities/enemies';
 import { createSpawner, type Spawner } from './world/spawner';
+import { createPhases } from './world/phases';
 import { overlap, projectileHit } from './math/collision';
 import { isDown } from './input';
 import level1 from './levels/level1.json';
 import type { Segment } from './entities/types';
-
-const TIER_1: DifficultyTier = { fireRateMul: 1, shotSpeedMul: 1, planesActive: false };
 
 export interface Game {
   ship: Ship;
@@ -20,13 +19,18 @@ export interface Game {
   floorGaps: readonly { yStart: number; yEnd: number }[];
   wallHeights: number[];
   time: number;
+  rebaseForLoop(baseY: number): void;
   update(dt: number): void;
 }
 
 export function createGame(): Game {
   const ship = createShip();
   const pools = createPools();
-  const spawner = createSpawner(level1.segments as unknown as Segment[]);
+  const phases = createPhases();
+  const spawner = createSpawner(
+    level1.segments as unknown as Segment[],
+    () => phases.tier.slotShrink,
+  );
 
   const game: Game = {
     ship,
@@ -39,14 +43,19 @@ export function createGame(): Game {
     wallHeights: [],
     time: 0,
 
+    rebaseForLoop(baseY: number): void {
+      spawner.reset(baseY);
+    },
+
     update(dt: number): void {
       game.time += dt;
       // §11 order: input is sampled inside the helpers below
-      updateFuel(ship, dt, 1, false); // fuel (frozen flag becomes phase-aware in Task 12)
-      updateShip(ship, dt, SCROLL_SPEED); // 2+3: scroll via ship.y, movement, clamps
+      updateFuel(ship, dt, phases.tier.fuelDrainMul, phases.fuelFrozen); // fuel drain (frozen during boss)
+      updateShip(ship, dt, phases.scrollPaused ? 0 : SCROLL_SPEED * phases.tier.scrollMul); // 2+3: scroll via ship.y, movement, clamps
       // fuel impact death check (spec §7)
       if (ship.fuel <= 0 && ship.z <= 1 && ship.state.kind === 'alive') killShip(ship);
       game.cameraY = ship.y;
+      game.hasFloor = phases.hasFloor; // space phase hides floor and shadow
       spawner.update(game.cameraY); // 4: spawn/despawn window
       // rebuild wallHeights without allocation
       game.wallHeights.length = 0;
@@ -56,11 +65,12 @@ export function createGame(): Game {
         }
       }
       // 5: entity AI — Task 10
-      updateEnemies(spawner.entities, ship, pools, spawner, dt, TIER_1);
+      updateEnemies(spawner.entities, ship, pools, spawner, dt, phases.tier);
       if (isDown('Space')) firePlayer(pools, ship); // 6a
       updateProjectiles(pools, dt, game.cameraY); // 6b: records yPrev first
       collide(game); // 7: §5.4 priority
-      // 8: deaths/phase transitions — extended in Tasks 10/12
+      // 8: phase transitions
+      phases.update(game, dt);
       // 9: shadow is a pure lookup at render time
     },
   };

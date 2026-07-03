@@ -32,6 +32,17 @@
     { "type": "wall", "y": 1800, "xStart": 30, "xEnd": 100, "height": 70 },
     { "type": "radar", "y": 1800, "x": 65, "height": 70 },
     { "type": "fuelDrum", "y": 1900, "x": 50 },
-    { "type": "wall", "y": 1960, "xStart": 0, "xEnd": 100, "height": 30 }
+    { "type": "wall", "y": 1960, "xStart": 0, "xEnd": 100, "height": 30 },
+    { "type": "wall", "y": 2880, "xStart": 0, "xEnd": 100, "height": 25 },
+    { "type": "turret", "y": 2950, "x": 40 },
+    { "type": "turret", "y": 2970, "x": 65 },
+    { "type": "fuelDrum", "y": 3020, "x": 55 },
+    { "type": "wall", "y": 3080, "xStart": 0, "xEnd": 50, "height": 50 },
+    { "type": "wall", "y": 3080, "xStart": 66, "xEnd": 100, "height": 50 },
+    { "type": "missileLauncher", "y": 3160, "x": 30 },
+    { "type": "radar", "y": 3200, "x": 70 },
+    { "type": "fuelDrum", "y": 3260, "x": 45 },
+    { "type": "barrier", "y": 3320, "xStart": 0, "xEnd": 100, "height": 35 },
+    { "type": "turret", "y": 3400, "x": 50 }
   ]
 }

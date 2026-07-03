@@ -26,7 +26,7 @@ export interface Spawner {
   update(cameraY: number): void;
   entities: readonly Entity[];
   spawn(kind: Entity['kind'], x: number, y: number, z: number): Entity | null;
-  reset(): void;
+  reset(offsetY?: number): void;
 }
 
 function blankEntity(): Entity {
@@ -50,9 +50,13 @@ function blankEntity(): Entity {
   };
 }
 
-export function createSpawner(segments: readonly Segment[]): Spawner {
+export function createSpawner(
+  segments: readonly Segment[],
+  getSlotShrink: () => number = () => 0,
+): Spawner {
   const pool: Entity[] = Array.from({ length: ENTITY_POOL }, blankEntity);
   let cursor = 0; // next segment index to consider (segments must be sorted by y)
+  let offset = 0; // y offset added to all segment positions (set by reset)
   let nextId = 1;
   const sorted = [...segments].sort((a, b) => a.y - b.y);
 
@@ -73,7 +77,15 @@ export function createSpawner(segments: readonly Segment[]): Spawner {
     e.vz = 0;
     e.wallHeight = 0;
     if (seg.type === 'wall' || seg.type === 'barrier') {
-      const box = wallAABB(seg.xStart ?? 0, seg.xEnd ?? 100, seg.y, seg.height ?? 30);
+      let xStart = seg.xStart ?? 0;
+      let xEnd = seg.xEnd ?? 100;
+      // slot shrink: widen partial walls toward the gap on higher loops
+      if (seg.type === 'wall' && (xStart > 0 || xEnd < 100)) {
+        const shrink = getSlotShrink();
+        if (seg.xStart === 0) xEnd += shrink;
+        else xStart -= shrink;
+      }
+      const box = wallAABB(xStart, xEnd, seg.y + offset, seg.height ?? 30);
       Object.assign(e, box);
       e.wallHeight = seg.height ?? 30;
       if (seg.type === 'barrier') {
@@ -87,7 +99,7 @@ export function createSpawner(segments: readonly Segment[]): Spawner {
       const def = DEFS[seg.type];
       if (!def) return void (e.live = false);
       e.x = seg.x ?? 50;
-      e.y = seg.y;
+      e.y = seg.y + offset;
       e.z = seg.type === 'turret' || seg.type === 'radar' ? (seg.height ?? 0) + def.hh : def.hh;
       e.hw = def.hw;
       e.hd = def.hd;
@@ -102,7 +114,7 @@ export function createSpawner(segments: readonly Segment[]): Spawner {
     update(cameraY: number): void {
       while (cursor < sorted.length) {
         const seg = sorted[cursor];
-        if (!seg || seg.y > cameraY + SPAWN_LOOKAHEAD) break;
+        if (!seg || seg.y + offset > cameraY + SPAWN_LOOKAHEAD) break;
         spawnSegment(seg);
         cursor++;
       }
@@ -132,7 +144,8 @@ export function createSpawner(segments: readonly Segment[]): Spawner {
       e.wallHeight = 0;
       return e;
     },
-    reset(): void {
+    reset(offsetY = 0): void {
+      offset = offsetY;
       cursor = 0;
       for (const e of pool) e.live = false;
     },
