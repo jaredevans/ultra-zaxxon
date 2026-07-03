@@ -9,6 +9,7 @@ import { LOW_FUEL } from './entities/ship';
 import type { GameMode } from './entities/types';
 import { loadScores, qualifies, insertScore } from './scores';
 import type { ScoreRow } from './scores';
+import { initAudio, startKlaxonLoop } from './audio';
 
 const canvas = document.querySelector<HTMLCanvasElement>('#game');
 if (!canvas) throw new Error('missing #game canvas');
@@ -29,6 +30,8 @@ fitCanvas();
 
 loadSettings();
 initInput();
+addEventListener('keydown', initAudio, { once: true });
+addEventListener('pointerdown', initAudio, { once: true });
 
 const atlas = initAtlas();
 const renderer = createRenderer(ctx, atlas);
@@ -94,6 +97,7 @@ startLoop(
         break;
       }
     }
+    startKlaxonLoop(mode.kind === 'playing' && game.ship.fuel <= LOW_FUEL && game.ship.fuel > 0);
   },
   (alpha) => {
     renderer.render(

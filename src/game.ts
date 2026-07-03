@@ -8,6 +8,7 @@ import { overlap, projectileHit } from './math/collision';
 import { isDown } from './input';
 import level1 from './levels/level1.json';
 import type { Segment } from './entities/types';
+import { play } from './audio';
 
 export const EXTRA_SHIP_AT = 10000;
 
@@ -71,7 +72,10 @@ export function createGame(): Game {
       updateFuel(ship, dt, phases.tier.fuelDrainMul, phases.fuelFrozen); // fuel drain (frozen during boss)
       updateShip(ship, dt, phases.scrollPaused ? 0 : SCROLL_SPEED * phases.tier.scrollMul); // 2+3: scroll via ship.y, movement, clamps
       // fuel impact death check (spec §7)
-      if (ship.fuel <= 0 && ship.z <= 1 && ship.state.kind === 'alive') killShip(ship);
+      if (ship.fuel <= 0 && ship.z <= 1 && ship.state.kind === 'alive') {
+        killShip(ship);
+        play('explosion');
+      }
       game.cameraY = ship.y;
       game.hasFloor = phases.hasFloor; // space phase hides floor and shadow
       spawner.update(game.cameraY); // 4: spawn/despawn window
@@ -84,13 +88,14 @@ export function createGame(): Game {
       }
       // 5: entity AI — Task 10
       updateEnemies(spawner.entities, ship, pools, spawner, dt, phases.tier);
-      if (isDown('Space')) firePlayer(pools, ship); // 6a
+      if (isDown('Space') && firePlayer(pools, ship)) play('laser'); // 6a
       updateProjectiles(pools, dt, game.cameraY); // 6b: records yPrev first
       collide(game); // 7: §5.4 priority
       // bonus extra ship (once per game)
       if (!game.bonusAwarded && game.score >= EXTRA_SHIP_AT) {
         game.bonusAwarded = true;
         ship.lives += 1;
+        play('extraLife');
       }
       // 8: phase transitions
       phases.update(game, dt);
@@ -113,6 +118,7 @@ function collide(game: Game): void {
           e.live = false; // both die (spec §5.4-2)
         }
         killShip(ship);
+        play('explosion');
         break;
       }
     }
@@ -124,6 +130,7 @@ function collide(game: Game): void {
       if (p.live && projectileHit(p, ship)) {
         p.live = false;
         killShip(ship);
+        play('explosion');
         break;
       }
     }
@@ -141,7 +148,10 @@ function collide(game: Game): void {
         if (e.hp <= 0) {
           e.live = false;
           game.score += e.points;
+          play('explosion');
           onKill(game, e);
+        } else if (e.kind === 'bossCore') {
+          play('bossHit');
         }
         break;
       }
@@ -151,5 +161,8 @@ function collide(game: Game): void {
 
 /** Kill hooks (fuel pickup, missile scoring, boss) grow in later tasks. */
 function onKill(game: Game, e: Entity): void {
-  if (e.kind === 'fuelDrum') game.ship.fuel = Math.min(100, game.ship.fuel + 20);
+  if (e.kind === 'fuelDrum') {
+    game.ship.fuel = Math.min(100, game.ship.fuel + 20);
+    play('fuelPickup');
+  }
 }
