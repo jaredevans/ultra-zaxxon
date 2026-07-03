@@ -65,9 +65,9 @@ const HOLE_PULSE = ['#16306e', '#2f5cc4', '#6b97f2', '#d7e6ff'] as const;
 // large spiral galaxy centered in the sky; Saturn (drawn after, at 78,84)
 // floats in front of its western edge. Alpha fades outward along the arms
 // and halo so the disk dissolves into the sky at the rim.
-// centered down-right of Saturn (78, 84); large enough to dominate the sky
-// while keeping its rim on-screen
-const GALAXY = { cx: 195, cy: 155, r: 195, tilt: -0.35, squash: 0.4 };
+// centered just down-right of Saturn (78, 84), close enough that the planet
+// hangs over the galactic hub; the disk dominates the sky
+const GALAXY = { cx: 135, cy: 125, r: 292, tilt: -0.35, squash: 0.4 };
 const GALAXY_ARM = [
   'rgba(255,240,255,0.75)',
   'rgba(225,190,255,0.6)',
@@ -148,18 +148,28 @@ export function createRenderer(ctx: CanvasRenderingContext2D, atlas: Atlas) {
         }
       }
 
-      // luminous core: layered ellipse rows with a soft outer glow
-      for (let py = -18; py <= 18; py += 2) {
-        const q = py / 20;
-        const half = Math.floor(32 * Math.sqrt(1 - q * q));
-        ctx.fillStyle = 'rgba(255,225,195,0.24)';
+      // luminous core: one faint diffuse glow layer plus granular specks —
+      // no solid near-opaque rows (they read as a white rectangle)
+      for (let py = -26; py <= 26; py += 2) {
+        const q = py / 28;
+        const half = Math.floor(46 * Math.sqrt(1 - q * q));
+        ctx.fillStyle = 'rgba(255,225,195,0.18)';
         ctx.fillRect(gx - half, gy + py, half * 2, 2);
       }
-      for (let py = -11; py <= 11; py += 2) {
-        const q = py / 13;
-        const half = Math.floor(19 * Math.sqrt(1 - q * q));
-        ctx.fillStyle = Math.abs(py) <= 3 ? 'rgba(255,247,235,0.95)' : 'rgba(255,230,205,0.62)';
-        ctx.fillRect(gx - half, gy + py, half * 2, 2);
+      for (let i = 0; i < 120; i++) {
+        const rad = 38 * Math.pow((hash(i * 61 + 11) % 100) / 100, 1.6);
+        const ang = ((hash(i * 37 + 5) % 628) / 100) * 1;
+        const px = gx + Math.cos(ang) * rad;
+        const py = gy + Math.sin(ang) * rad * 0.62;
+        const t = rad / 38;
+        ctx.fillStyle =
+          t < 0.35
+            ? 'rgba(255,246,232,0.8)'
+            : t < 0.7
+              ? 'rgba(255,230,203,0.55)'
+              : 'rgba(255,216,186,0.32)';
+        const sz = 2 + (hash(i * 19) % 3);
+        ctx.fillRect(px, py, sz, sz);
       }
     }
 
