@@ -62,12 +62,14 @@ const SCENERY: readonly SpriteName[] = ['hangar', 'tower', 'silo', 'antenna', 'b
 // initialize (TDZ), throwing on first use and killing the rAF loop.
 const HOLE_PULSE = ['#16306e', '#2f5cc4', '#6b97f2', '#d7e6ff'] as const;
 
-// nebula blobs in the upper-right sky, clear of the Saturn disc at (78, 84)
+// nebula blobs in the upper-right sky, clear of the Saturn disc at (78, 84).
+// Alphas must be high: clumps rarely overlap, so they don't stack — a lone
+// ~15%-alpha speck over the near-black sky is invisible.
 const NEBULA = [
-  { cx: 330, cy: 120, r: 62, color: 'rgba(150,80,210,0.16)' },
-  { cx: 375, cy: 165, r: 46, color: 'rgba(90,150,230,0.14)' },
-  { cx: 296, cy: 172, r: 40, color: 'rgba(230,110,180,0.10)' },
-  { cx: 344, cy: 142, r: 30, color: 'rgba(190,120,240,0.18)' },
+  { cx: 330, cy: 120, r: 62, color: 'rgba(150,80,210,0.45)', core: 'rgba(205,150,255,0.55)' },
+  { cx: 375, cy: 165, r: 46, color: 'rgba(90,150,230,0.40)', core: 'rgba(150,200,255,0.5)' },
+  { cx: 296, cy: 172, r: 40, color: 'rgba(230,110,180,0.35)', core: 'rgba(255,170,215,0.45)' },
+  { cx: 344, cy: 142, r: 30, color: 'rgba(190,120,240,0.5)', core: 'rgba(230,180,255,0.6)' },
 ] as const;
 
 // items[] is reused across frames (the array itself is not reallocated).
@@ -95,17 +97,18 @@ export function createRenderer(ctx: CanvasRenderingContext2D, atlas: Atlas) {
     ctx.fillRect(0, 0, VIEW_W, VIEW_H);
 
     // nebula: hash-scattered translucent pixel clumps with radial falloff,
-    // layered per blob color — deterministic, stars shine through on top
+    // plus a brighter core pass — deterministic, stars shine through on top
     for (let b = 0; b < NEBULA.length; b++) {
       const blob = NEBULA[b];
       if (!blob) continue;
-      ctx.fillStyle = blob.color;
-      for (let i = 0; i < 44; i++) {
-        const u = ((hash(b * 131 + i * 97) % 200) / 100 - 1) * 1.0;
-        const v = ((hash(b * 57 + i * 53) % 200) / 100 - 1) * 1.0;
+      for (let i = 0; i < 70; i++) {
+        const u = (hash(b * 131 + i * 97) % 200) / 100 - 1;
+        const v = (hash(b * 57 + i * 53) % 200) / 100 - 1;
         const px = blob.cx + u * Math.abs(u) * blob.r;
         const py = blob.cy + v * Math.abs(v) * blob.r * 0.7;
-        const sz = 3 + (hash(i * 29 + b) % 4);
+        const sz = 4 + (hash(i * 29 + b) % 6);
+        // inner third of the scatter gets the brighter core color
+        ctx.fillStyle = Math.abs(u) + Math.abs(v) < 0.7 ? blob.core : blob.color;
         ctx.fillRect(px, py, sz, sz);
       }
     }
