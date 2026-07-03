@@ -83,6 +83,14 @@ describe('boss core reachable through invulnerable body', () => {
     expect(p.live).toBe(false);
   });
 
+  it('skip-to-boss brings exactly the 3 escort fighters, not the skipped phase-2 waves', () => {
+    const game = createGame();
+    game.skipToBoss();
+    for (let i = 0; i < 90; i++) game.update(1 / 60);
+    const fighters = game.spawner.entities.filter((e) => e.live && e.kind === 'fighter');
+    expect(fighters.length).toBe(3);
+  });
+
   it('altimeter shows an aim tick at the core height while the boss is alive', () => {
     const game = createGame();
     game.ship.y = SHIP_Y;

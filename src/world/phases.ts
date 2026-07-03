@@ -60,7 +60,7 @@ export function createPhases(): Phases {
           ? 'fortress1'
           : localY < PHASE2_END
             ? 'space'
-            : localY < BOSS_Y - 30 // stop close enough that the boss sits inside the visible window
+            : localY < BOSS_Y - 45 // far enough for dodge time, still inside the visible window
               ? 'fortress2'
               : 'boss';
 
@@ -73,17 +73,21 @@ export function createPhases(): Phases {
         bonusPaid = phases.name;
       }
 
-      // phase 2: fighter waves at fixed local trigger ys
+      // phase 2: fighter waves at fixed local trigger ys. Waves whose trigger
+      // is already past phase 2 (skip cheat, future warps) advance the cursor
+      // WITHOUT spawning — otherwise every missed wave floods in at once.
       while (waveIdx < WAVE_YS.length && localY >= (WAVE_YS[waveIdx] ?? Infinity)) {
-        const n = WAVE_SIZES[waveIdx] ?? 2;
-        for (let i = 0; i < n; i++) {
-          const f = game.spawner.spawn(
-            'fighter',
-            20 + i * 30,
-            game.cameraY + 80 + i * 8,
-            30 + i * 10,
-          );
-          if (f) f.fireTimer = 1 + i * 0.5;
+        if (localY < PHASE2_END) {
+          const n = WAVE_SIZES[waveIdx] ?? 2;
+          for (let i = 0; i < n; i++) {
+            const f = game.spawner.spawn(
+              'fighter',
+              20 + i * 30,
+              game.cameraY + 80 + i * 8,
+              30 + i * 10,
+            );
+            if (f) f.fireTimer = 1 + i * 0.5;
+          }
         }
         waveIdx++;
       }
@@ -93,6 +97,19 @@ export function createPhases(): Phases {
         if (!bossRefs) {
           bossRefs = spawnBoss(game.spawner, phases.loopN * PHASE3_END + BOSS_Y);
           phases.scrollPaused = true;
+          // escort wing: three fighters harass while the boss volleys
+          for (let i = 0; i < 3; i++) {
+            const f = game.spawner.spawn(
+              'fighter',
+              25 + i * 25,
+              game.cameraY + 55 + i * 10,
+              22 + i * 8,
+            );
+            if (f) {
+              f.fireTimer = 1.5 + i;
+              f.vy = -4 - i * 2; // slow drift so the escorts linger
+            }
+          }
         }
         if (bossRefs) {
           const result = updateBoss(bossRefs, game.ship, game.pools, game.spawner, dt);

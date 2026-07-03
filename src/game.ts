@@ -74,7 +74,7 @@ export function createGame(): Game {
     skipToBoss(): void {
       // Rewinding into an active boss fight would strand scrollPaused=true
       if (phases.name === 'boss') return;
-      ship.y = phases.loopN * PHASE3_END + BOSS_Y - 45;
+      ship.y = phases.loopN * PHASE3_END + BOSS_Y - 60; // 15 units before the trigger
       ship.fuel = 100;
     },
 

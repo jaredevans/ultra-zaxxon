@@ -73,15 +73,23 @@ export function updateEnemies(
         break;
       }
       case 'fighter': {
-        // converge on player (x, z) with lag, hold distance ahead, fire
+        // converge on player (x, z) with lag, hold distance ahead, fire.
+        // Per-entity personality derived from id (aim offset, speed, weave)
+        // keeps wave-mates from stacking into a single blob; e.vx is
+        // repurposed as the weave phase (fighters never strafe ballistically).
+        const aimX = ship.x + (((e.id * 37) % 11) - 5);
+        const aimZ = ship.z + (((e.id * 53) % 7) - 3);
+        const speed = FIGHTER_SPEED * (0.75 + (e.id % 4) * 0.15);
+        e.vx += dt * (1.2 + (e.id % 3) * 0.8);
         e.y += (e.vy !== 0 ? e.vy : -10) * dt; // drifts toward player
         // takeoff climb from parkedPlane conversion: apply and decay vz over ~1s
         if (e.vz > 0) {
           e.z += e.vz * dt;
           e.vz = Math.max(0, e.vz - 12 * dt);
         }
-        e.x += Math.sign(ship.x - e.x) * Math.min(FIGHTER_SPEED * dt, Math.abs(ship.x - e.x));
-        e.z += Math.sign(ship.z - e.z) * Math.min(FIGHTER_SPEED * 0.7 * dt, Math.abs(ship.z - e.z));
+        e.x += Math.sign(aimX - e.x) * Math.min(speed * dt, Math.abs(aimX - e.x));
+        e.x += Math.sin(e.vx) * 8 * dt; // weave
+        e.z += Math.sign(aimZ - e.z) * Math.min(speed * 0.7 * dt, Math.abs(aimZ - e.z));
         e.fireTimer -= dt;
         if (e.fireTimer <= 0 && e.y - ship.y > 15 && e.y - ship.y < 60) {
           e.fireTimer = FIGHTER_INTERVAL / tier.fireRateMul;

@@ -28,10 +28,13 @@ describe('playfield visibility invariants', () => {
     expect(onScreen({ x: 50, y: cam + 40, z: 3 }, cam)).toBe(true);
   });
 
-  it('the boss is visible at its camera-stop distance (30 ahead), across its tracked x range', () => {
-    // phases.ts halts the camera at BOSS_Y - 30; boss tracking clamps to [BOSS_X_MIN, BOSS_X_MAX]
-    for (const x of [BOSS_X_MIN, 50, BOSS_X_MAX]) {
-      expect(onScreen({ x, y: cam + 30, z: 18 }, cam), `boss x=${x}`).toBe(true);
+  it('the boss is visible at its camera-stop distance (45 ahead), across its full maneuver envelope', () => {
+    // phases.ts halts the camera at BOSS_Y - 45; tracking clamps to [BOSS_X_MIN, BOSS_X_MAX]
+    // and the body bobs z ∈ [12, 24]
+    for (const x of [BOSS_X_MIN, 40, BOSS_X_MAX]) {
+      for (const z of [12, 24]) {
+        expect(onScreen({ x, y: cam + 45, z }, cam), `boss x=${x} z=${z}`).toBe(true);
+      }
     }
   });
 
