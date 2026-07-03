@@ -30,6 +30,27 @@ const KIND_SPRITE: Partial<Record<Entity['kind'], SpriteName>> = {
   bossCore: 'bossCore',
 };
 
+/**
+ * The player ship is a tiny flat-shaded 3D delta-wing model projected
+ * through the same isometric transform as the world, rotated by the
+ * smoothed pitch (attack angle) and bank (roll). Unlike a sprite, the
+ * heading always matches the flight direction and the attitude reads
+ * continuously.
+ */
+const SHIP_MODEL = {
+  nose: { x: 0, y: 5, z: 0.4 },
+  ltip: { x: -5, y: -3.2, z: 0 },
+  rtip: { x: 5, y: -3.2, z: 0 },
+  tail: { x: 0, y: -2.8, z: 1.2 },
+  fin: { x: 0, y: -3.4, z: 3.2 },
+  spine: { x: 0, y: 0.5, z: 1.0 },
+  canL: { x: -0.9, y: 1.4, z: 0.9 },
+  canR: { x: 0.9, y: 1.4, z: 0.9 },
+  canF: { x: 0, y: 3.6, z: 0.5 },
+};
+const MAX_PITCH = 0.5; // radians of visible attack angle at full climb/dive
+const MAX_ROLL = 0.55;
+
 // items[] is reused across frames (the array itself is not reallocated).
 // Per-frame DrawItem closures ARE allocated here — intentional:
 // the no-allocation constraint applies to update() only, not the render path.
@@ -127,10 +148,7 @@ export function createRenderer(ctx: CanvasRenderingContext2D, atlas: Atlas) {
           items.push({
             key: depthKey(ship),
             id: -1,
-            draw: () => {
-              const s = project(ship, w.cameraY);
-              atlas.draw(ctx, 'ship', ship.bank + 1, s.sx, s.sy);
-            },
+            draw: () => drawShip(ship, w.cameraY),
           });
         }
       } else {
@@ -174,6 +192,58 @@ export function createRenderer(ctx: CanvasRenderingContext2D, atlas: Atlas) {
       for (const it of items) it.draw();
     },
   };
+
+  function drawShip(ship: Ship, cameraY: number): void {
+    const th = ship.pitch * MAX_PITCH;
+    const ph = ship.bank * MAX_ROLL;
+    const ct = Math.cos(th);
+    const st = Math.sin(th);
+    const cp = Math.cos(ph);
+    const sp = Math.sin(ph);
+
+    const pt = (v: { x: number; y: number; z: number }) => {
+      // roll around the fuselage axis (right input dips the right wing)...
+      const x1 = v.x * cp + v.z * sp;
+      const z1 = -v.x * sp + v.z * cp;
+      // ...then pitch around the lateral axis (climb raises the nose)
+      const y2 = v.y * ct - z1 * st;
+      const z2 = v.y * st + z1 * ct;
+      p.x = ship.x + x1;
+      p.y = ship.y + y2;
+      p.z = ship.z + z2;
+      return project(p, cameraY);
+    };
+
+    const tri = (
+      a: { sx: number; sy: number },
+      b: { sx: number; sy: number },
+      c: { sx: number; sy: number },
+      fill: string,
+    ) => {
+      ctx.fillStyle = fill;
+      ctx.beginPath();
+      ctx.moveTo(a.sx, a.sy);
+      ctx.lineTo(b.sx, b.sy);
+      ctx.lineTo(c.sx, c.sy);
+      ctx.closePath();
+      ctx.fill();
+    };
+
+    const nose = pt(SHIP_MODEL.nose);
+    const ltip = pt(SHIP_MODEL.ltip);
+    const rtip = pt(SHIP_MODEL.rtip);
+    const tail = pt(SHIP_MODEL.tail);
+    const fin = pt(SHIP_MODEL.fin);
+    const spine = pt(SHIP_MODEL.spine);
+
+    // trailing silhouette / underside first, then wings shaded by roll,
+    // then fin and canopy on top
+    tri(ltip, rtip, nose, '#3a3a4c');
+    tri(nose, ltip, tail, ship.bank < 0 ? '#b0b0c4' : '#7c7c92');
+    tri(nose, rtip, tail, ship.bank > 0 ? '#7c7c92' : '#c8c8dc');
+    tri(tail, fin, spine, '#4a5ae0');
+    tri(pt(SHIP_MODEL.canL), pt(SHIP_MODEL.canR), pt(SHIP_MODEL.canF), '#70c8ff');
+  }
 
   function drawWall(e: Entity, cameraY: number): void {
     // leading (near) face: projected quad from floor to wallHeight along the x span

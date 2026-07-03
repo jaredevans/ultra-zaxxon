@@ -12,7 +12,8 @@ export interface Ship extends AABB {
   fuel: number; // 0–100
   lives: number;
   fireCooldown: number;
-  bank: -1 | 0 | 1; // sprite tilt frame from lateral input
+  bank: number; // smoothed roll, -1..1, from lateral input
+  pitch: number; // smoothed attack angle, -1 (dive)..1 (climb)
 }
 
 export interface Projectile extends AABB {

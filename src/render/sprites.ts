@@ -1,5 +1,6 @@
+// The player ship is not a sprite — the renderer draws it as a projected
+// flat-shaded 3D model so its attack angle and roll read continuously.
 export type SpriteName =
-  | 'ship'
   | 'shadow'
   | 'turret'
   | 'radar'
@@ -39,38 +40,6 @@ const PAL: Record<string, string> = {
 
 // prettier-ignore
 const GRIDS: Record<string, string[][]> = {
-  ship: [
-    [ // frame 0: banked left
-      '.......B........',
-      '......BBB.......',
-      '..W..BCCB.......',
-      '.WWWBBCCBB......',
-      'WWWWWWWWWWWWG...',
-      '.GGGWWWWWWGGGG..',
-      '...GGGGGGGG.O...',
-      '.....GGGG...O...',
-    ],
-    [ // frame 1: level
-      '.......BB.......',
-      '......BCCB......',
-      '.....BBCCBB.....',
-      'W...WWWWWWWW...W',
-      'WWWWWWWWWWWWWWWW',
-      '.GGGGWWWWWWGGGG.',
-      '....GGGGGGGG....',
-      '......GOOG......',
-    ],
-    [ // frame 2: banked right
-      '........B.......',
-      '.......BBB......',
-      '.......BCCB..W..',
-      '......BBCCBWWW..',
-      '...GWWWWWWWWWWWW',
-      '..GGGGWWWWWWGGG.',
-      '...O.GGGGGGGG...',
-      '...O...GGGG.....',
-    ],
-  ],
   turret: [[
     '....RR....',
     '....RR....',

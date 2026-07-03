@@ -14,6 +14,7 @@ export const SHIP_HD = 2;
 export const SHIP_HH = 1.4;
 export const EXPLODE_TIME = 0.8;
 export const RESPAWN_TIME = 2.0;
+const TILT_RATE = 9; // attitude easing toward its target, per second
 export const FUEL_DRAIN = 1.2; // per second, tier 1
 export const LOW_FUEL = 20;
 export const FORCED_DESCENT_RATE = 14; // z-units/sec when fuel is empty
@@ -37,6 +38,7 @@ export function createShip(): Ship {
     lives: 3,
     fireCooldown: 0,
     bank: 0,
+    pitch: 0,
   };
 }
 
@@ -75,7 +77,11 @@ export function updateShip(ship: Ship, dt: number, scrollSpeed: number): void {
   } else {
     ship.z = Math.min(Z_MAX, Math.max(Z_MIN, ship.z + dz * Z_SPEED * dt));
   }
-  ship.bank = dx as -1 | 0 | 1;
+  // smoothed attitude: roll follows lateral input, pitch follows climb/dive
+  const targetPitch = ship.fuel <= 0 ? -1 : dz;
+  const ease = Math.min(1, TILT_RATE * dt);
+  ship.bank += (dx - ship.bank) * ease;
+  ship.pitch += (targetPitch - ship.pitch) * ease;
 
   if (ship.fireCooldown > 0) ship.fireCooldown -= dt;
 }

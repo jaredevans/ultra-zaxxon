@@ -1,6 +1,30 @@
 import { describe, it, expect } from 'vitest';
 import { createShip, killShip, updateShip, EXPLODE_TIME } from '../src/entities/ship';
 
+describe('attack angle (pitch) state', () => {
+  const DT = 1 / 60;
+
+  it('starts level', () => {
+    const ship = createShip();
+    expect(ship.pitch).toBe(0);
+    expect(ship.bank).toBe(0);
+  });
+
+  it('forced descent pitches the nose down toward -1', () => {
+    const ship = createShip();
+    ship.fuel = 0;
+    for (let i = 0; i < 60; i++) updateShip(ship, DT, 0);
+    expect(ship.pitch).toBeLessThan(-0.8);
+  });
+
+  it('pitch eases back to level when the cause ends', () => {
+    const ship = createShip();
+    ship.pitch = 1;
+    for (let i = 0; i < 60; i++) updateShip(ship, DT, 0);
+    expect(Math.abs(ship.pitch)).toBeLessThan(0.05);
+  });
+});
+
 describe('death and respawn positioning', () => {
   it('the explosion plays at the impact position, not the respawn point', () => {
     const ship = createShip();
