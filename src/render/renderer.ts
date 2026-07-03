@@ -65,9 +65,9 @@ const HOLE_PULSE = ['#16306e', '#2f5cc4', '#6b97f2', '#d7e6ff'] as const;
 // large spiral galaxy centered in the sky; Saturn (drawn after, at 78,84)
 // floats in front of its western edge. Alpha fades outward along the arms
 // and halo so the disk dissolves into the sky at the rim.
-// centered up-right of Saturn (78, 84); large enough to dominate the sky
+// centered down-right of Saturn (78, 84); large enough to dominate the sky
 // while keeping its rim on-screen
-const GALAXY = { cx: 185, cy: 40, r: 195, tilt: -0.35, squash: 0.4 };
+const GALAXY = { cx: 195, cy: 155, r: 195, tilt: -0.35, squash: 0.4 };
 const GALAXY_ARM = [
   'rgba(255,240,255,0.75)',
   'rgba(225,190,255,0.6)',
