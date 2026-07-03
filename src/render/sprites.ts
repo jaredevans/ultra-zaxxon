@@ -183,7 +183,8 @@ export function initAtlas(): Atlas {
   return {
     draw(ctx, name, frame, sx, sy) {
       const frames = entries.get(name);
-      const f = frames?.[Math.min(frame, (frames?.length ?? 1) - 1)];
+      if (!frames || frames.length === 0) return;
+      const f = frames[Math.min(Math.max(0, frame), frames.length - 1)];
       if (!f) return;
       ctx.drawImage(f.canvas, Math.round(sx - f.w / 2), Math.round(sy - f.h / 2));
     },
