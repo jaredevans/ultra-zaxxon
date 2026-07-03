@@ -269,8 +269,9 @@ export function createRenderer(ctx: CanvasRenderingContext2D, atlas: Atlas) {
 
       const ship = w.ship;
       if (ship.state.kind !== 'exploding') {
+        const outOfShips = ship.lives <= 0; // final death: only the explosion shows, no respawn ghost
         const blink = ship.state.kind === 'respawning' && Math.floor(ship.state.t * 10) % 2 === 0;
-        if (!blink) {
+        if (!blink && !outOfShips) {
           items.push({
             key: depthKey(ship),
             id: -1,

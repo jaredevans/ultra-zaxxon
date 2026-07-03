@@ -127,6 +127,34 @@ describe('renderer draws live impact bursts', () => {
     expect(scales.length).toBeGreaterThanOrEqual(2);
   });
 
+  it('after the final death the ship never reappears (no ghost behind game over)', () => {
+    const log: string[] = [];
+    const renderer = createRenderer(stubCtx(log), recordingAtlas([]));
+    const ship = createShip();
+    ship.lives = 0; // out of ships
+    ship.state = { kind: 'respawning', t: 0.15 }; // post-explosion, non-blink phase
+    const world: RenderWorld = {
+      ship,
+      entities: [],
+      playerShots: [],
+      enemyShots: [],
+      cameraY: 0,
+      hasFloor: false,
+      floorGaps: [],
+      impacts: [],
+    };
+    renderer.render(world, 0);
+    // '#3a3a4c' is the ship model's underside fill — absent means no ship drawn
+    expect(log).not.toContain('fill:#3a3a4c');
+
+    // sanity: with a life left, the same state DOES draw the ship
+    const log2: string[] = [];
+    const renderer2 = createRenderer(stubCtx(log2), recordingAtlas([]));
+    ship.lives = 2;
+    renderer2.render({ ...world, ship }, 0);
+    expect(log2).toContain('fill:#3a3a4c');
+  });
+
   it('dead impacts draw nothing', () => {
     const calls: [SpriteName, number][] = [];
     const renderer = createRenderer(stubCtx(), recordingAtlas(calls));

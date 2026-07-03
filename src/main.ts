@@ -65,7 +65,8 @@ startLoop(
         // dev-only cheat, stripped from production builds
         if (import.meta.env.DEV && consumePress('KeyS')) game.skipToBoss();
         game.update(dt);
-        if (game.ship.lives <= 0) {
+        // final death: let the full explosion play out before game over
+        if (game.ship.lives <= 0 && game.ship.state.kind !== 'exploding') {
           mode = qualifies(game.score)
             ? { kind: 'highScoreEntry', name: '' }
             : { kind: 'gameOver', t: 3 };
