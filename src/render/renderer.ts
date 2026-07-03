@@ -51,6 +51,8 @@ const SHIP_MODEL = {
 const MAX_PITCH = 0.5; // radians of visible attack angle at full climb/dive
 const MAX_ROLL = 0.55;
 
+const SCENERY: readonly SpriteName[] = ['hangar', 'tower', 'silo', 'antenna', 'bunker'];
+
 // items[] is reused across frames (the array itself is not reallocated).
 // Per-frame DrawItem closures ARE allocated here — intentional:
 // the no-allocation constraint applies to update() only, not the render path.
@@ -68,25 +70,94 @@ export function createRenderer(ctx: CanvasRenderingContext2D, atlas: Atlas) {
     return worldToScreen(v, cameraY, ORIGIN);
   }
 
-  function drawFloor(cameraY: number, hasFloor: boolean, gaps: RenderWorld['floorGaps']): void {
-    ctx.fillStyle = '#000010';
+  /** Deterministic integer hash for tile/scenery variety (no RNG in render). */
+  const hash = (n: number): number => (Math.imul(n | 0, 2654435761) >>> 0) >> 8;
+
+  function drawSky(cameraY: number): void {
+    ctx.fillStyle = '#05050e';
     ctx.fillRect(0, 0, VIEW_W, VIEW_H);
-    if (!hasFloor) return drawStars(cameraY);
+    // two-tier starfield with slow parallax, deterministic per index
+    for (let i = 0; i < 90; i++) {
+      const bright = i % 4 === 0;
+      const sx = (i * 97 + ((i * i) % 31)) % VIEW_W;
+      const sy = (i * 211 + Math.floor(cameraY * (bright ? 2.5 : 1.5))) % VIEW_H;
+      ctx.fillStyle = bright ? '#e8ecff' : '#7880a8';
+      ctx.fillRect(sx, (VIEW_H - sy) % VIEW_H, bright ? 2 : 1, bright ? 2 : 1);
+    }
+    // banded pixel-art planet, fixed in the far sky
+    const cx = 78;
+    const cy = 84;
+    const r = 26;
+    for (let py = -r; py <= r; py += 2) {
+      const half = Math.floor(Math.sqrt(r * r - py * py));
+      const band = Math.floor((py + r) / 2) % 7;
+      ctx.fillStyle =
+        band < 2 ? '#6a4258' : band < 4 ? '#8a536a' : band < 5 ? '#9d6379' : '#553648';
+      ctx.fillRect(cx - half, cy + py, half * 2, 2);
+    }
+  }
+
+  function drawFloor(cameraY: number, hasFloor: boolean, gaps: RenderWorld['floorGaps']): void {
+    drawSky(cameraY);
+    if (!hasFloor) return;
+    const ex = 10 * (TILE_W / 2);
+    const ey = 10 * (TILE_H / 2);
     const y0 = Math.floor((cameraY - 20) / 10) * 10;
-    for (let wy = y0; wy < cameraY + 90; wy += 10) {
+    const yMax = Math.floor((cameraY + 90) / 10) * 10;
+    // far → near so nearer platform rows paint over farther cliff faces
+    for (let wy = yMax; wy >= y0; wy -= 10) {
       const inGap = gaps.some((g) => wy + 5 > g.yStart && wy + 5 < g.yEnd);
       if (inGap) continue;
+
+      // decorative apron strip left of the corridor — scenery stands here
+      for (let wx = -20; wx < 0; wx += 10) {
+        p.x = wx;
+        p.y = wy;
+        p.z = 0;
+        const a = project(p, cameraY);
+        ctx.fillStyle = ((wx + wy) / 10) % 2 === 0 ? '#101c28' : '#0d1822';
+        ctx.beginPath();
+        ctx.moveTo(a.sx, a.sy);
+        ctx.lineTo(a.sx + ex, a.sy + ey);
+        ctx.lineTo(a.sx + ex + ex, a.sy);
+        ctx.lineTo(a.sx + ex, a.sy - ey);
+        ctx.closePath();
+        ctx.fill();
+      }
+
+      // the fortress is a floating platform: cliff faces drop from its edge
+      p.y = wy;
+      p.z = 0;
+      p.x = -20;
+      const el = project(p, cameraY);
+      ctx.fillStyle = '#1c1c2a';
+      ctx.fillRect(el.sx - 1, el.sy, 3, 30); // left edge pillar
+      ctx.beginPath();
+      ctx.moveTo(el.sx, el.sy);
+      ctx.lineTo(el.sx + ex, el.sy - ey); // along +y edge
+      ctx.lineTo(el.sx + ex, el.sy - ey + 28);
+      ctx.lineTo(el.sx, el.sy + 28);
+      ctx.closePath();
+      ctx.fill();
+      ctx.fillStyle = '#4a4a62'; // lit rim
+      ctx.beginPath();
+      ctx.moveTo(el.sx, el.sy);
+      ctx.lineTo(el.sx + ex, el.sy - ey);
+      ctx.lineTo(el.sx + ex, el.sy - ey + 3);
+      ctx.lineTo(el.sx, el.sy + 3);
+      ctx.closePath();
+      ctx.fill();
+
       for (let wx = 0; wx < 100; wx += 10) {
         p.x = wx;
         p.y = wy;
         p.z = 0;
         const a = project(p, cameraY);
         const even = ((wx + wy) / 10) % 2 === 0;
-        ctx.fillStyle = even ? '#182838' : '#142030';
+        const runway = wx >= 40 && wx < 60;
+        ctx.fillStyle = runway ? (even ? '#24344a' : '#203042') : even ? '#182838' : '#142030';
         // 10×10 world tile as a screen parallelogram:
-        // +x edge Δ(+10·TILE_W/2, +10·TILE_H/2), +y edge Δ(+10·TILE_W/2, −10·TILE_H/2)
-        const ex = 10 * (TILE_W / 2);
-        const ey = 10 * (TILE_H / 2);
+        // +x edge Δ(+ex, +ey), +y edge Δ(+ex, −ey)
         ctx.beginPath();
         ctx.moveTo(a.sx, a.sy);
         ctx.lineTo(a.sx + ex, a.sy + ey); // +x edge
@@ -94,17 +165,35 @@ export function createRenderer(ctx: CanvasRenderingContext2D, atlas: Atlas) {
         ctx.lineTo(a.sx + ex, a.sy - ey);
         ctx.closePath();
         ctx.fill();
-      }
-    }
-  }
 
-  function drawStars(cameraY: number): void {
-    ctx.fillStyle = '#cfd8ff';
-    for (let i = 0; i < 60; i++) {
-      // deterministic star field scrolled by cameraY (no RNG in render)
-      const sx = (i * 97) % VIEW_W;
-      const sy = (i * 211 + Math.floor(cameraY * 4)) % VIEW_H;
-      ctx.fillRect(sx, (VIEW_H - sy) % VIEW_H, 2, 2);
+        const th = hash(wx * 7919 + wy);
+        if (wx === 0 || wx === 90) {
+          // hazard chevrons along the platform edges
+          const outer = wx === 0;
+          ctx.fillStyle = '#b89020';
+          for (let k = 0; k < 3; k++) {
+            const t = 0.15 + k * 0.3;
+            const bx = a.sx + (outer ? 0 : ex) + ex * t;
+            const by = a.sy + (outer ? 0 : ey) - ey * t;
+            ctx.fillRect(bx, by - 1, 4, 3);
+          }
+        } else if (wx === 50) {
+          // runway centerline dash on alternating rows
+          if ((wy / 10) % 2 === 0) {
+            ctx.fillStyle = '#c8d4e0';
+            ctx.fillRect(a.sx + ex * 0.35, a.sy - ey * 0.35 - 1, 8, 3);
+          }
+        } else if (th % 11 === 0) {
+          // recessed panel
+          ctx.fillStyle = even ? '#101d2a' : '#0d1822';
+          ctx.fillRect(a.sx + ex - 5, a.sy - 2, 10, 5);
+        } else if (th % 13 === 5) {
+          // vent grate
+          ctx.fillStyle = '#0a141e';
+          ctx.fillRect(a.sx + ex - 6, a.sy - 1, 3, 2);
+          ctx.fillRect(a.sx + ex + 1, a.sy - 1, 3, 2);
+        }
+      }
     }
   }
 
@@ -112,6 +201,30 @@ export function createRenderer(ctx: CanvasRenderingContext2D, atlas: Atlas) {
     render(w: RenderWorld, _alpha: number): void {
       items.length = 0;
       drawFloor(w.cameraY, w.hasFloor, w.floorGaps);
+
+      // decorative base scenery on the left apron (no collision) —
+      // deterministic per world row, depth-sorted with everything else
+      if (w.hasFloor) {
+        const s0 = Math.floor((w.cameraY - 20) / 60) * 60;
+        for (let sy = s0; sy < w.cameraY + 100; sy += 60) {
+          const h = hash(sy);
+          const kind = SCENERY[h % SCENERY.length];
+          if (!kind) continue;
+          const sxw = -15 - (h % 5);
+          const syw = sy + (h % 37);
+          items.push({
+            key: depthKey({ x: sxw, y: syw, z: 0 }),
+            id: -1000 - sy,
+            draw: () => {
+              p.x = sxw;
+              p.y = syw;
+              p.z = 0;
+              const s = project(p, w.cameraY);
+              atlas.draw(ctx, kind, 0, s.sx, s.sy - atlas.size(kind).h / 2 + 3);
+            },
+          });
+        }
+      }
 
       // shadow (above floor, below everything else — drawn before sorted pass)
       const fh = floorHeightAt(w.ship.x, w.ship.y, w.entities, w.hasFloor, w.floorGaps);

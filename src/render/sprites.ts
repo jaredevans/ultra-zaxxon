@@ -2,6 +2,11 @@
 // flat-shaded 3D model so its attack angle and roll read continuously.
 export type SpriteName =
   | 'shadow'
+  | 'hangar'
+  | 'tower'
+  | 'silo'
+  | 'antenna'
+  | 'bunker'
   | 'turret'
   | 'radar'
   | 'fuelDrum'
@@ -36,10 +41,86 @@ const PAL: Record<string, string> = {
   K: '#101018',
   E: '#20a040',
   S: 'rgba(0,0,0,0.45)',
+  M: '#6a7a8e', // base-structure metal
+  N: '#3c4654', // dark metal
+  L: '#aeb8c8', // lit metal
 };
 
 // prettier-ignore
 const GRIDS: Record<string, string[][]> = {
+  hangar: [[
+    '......MMMMMMMMMM......',
+    '....MMLLLLLLLLLLMM....',
+    '..MMLLMMMMMMMMMMLLMM..',
+    '.MLLMMNNNNNNNNNNMMLLM.',
+    'MLLMNNNNNNNNNNNNNNMLLM',
+    'MLMNNNKKKKKKKKNNNNNMLM',
+    'MLMNNNKKKKKKKKNNNNNMLM',
+    'MLMNNNKKKKKKKKNNNNNMLM',
+    'MLMNNNKKKKKKKKNNNNNMLM',
+    'NNNNNNKKKKKKKKNNNNNNNN',
+    'YKYKYKYKYKYKYKYKYKYKYK',
+  ]],
+  tower: [[
+    '.LLLLLLLL.',
+    '.LKKLLKKL.',
+    '.LLLLLLLL.',
+    '.LKKLLKKL.',
+    '.LLLLLLLL.',
+    '..MMMMMM..',
+    '...MMMM...',
+    '...MMMM...',
+    '...MMMM...',
+    '...MMMM...',
+    '...MMMM...',
+    '..MMMMMM..',
+    '.MMMMMMMM.',
+    '.MNNNNNNM.',
+    'MMNNNNNNMM',
+    'KKKKKKKKKK',
+  ]],
+  silo: [[
+    '...MMMMMM...',
+    '.MMLLLLLLMM.',
+    '.MLLWWLLLLM.',
+    '.MLLWWLLLLM.',
+    '.MLLLLLLLLM.',
+    '.MNLLLLLLNM.',
+    '.MNLLLLLLNM.',
+    '.MNNLLLLNNM.',
+    '.MNNNNNNNNM.',
+    '.MMNNNNNNMM.',
+    '..MMMMMMMM..',
+    'KKKKKKKKKKKK',
+  ]],
+  antenna: [[
+    '....CC....',
+    '...CCCC...',
+    '....CC....',
+    '....MM....',
+    '...MMMM...',
+    '....MM....',
+    '....MM....',
+    '.C..MM....',
+    '..C.MM....',
+    '...CMM....',
+    '....MM....',
+    '....MM....',
+    '....MM....',
+    '...MMMM...',
+    '..MMMMMM..',
+    'KKKKKKKKKK',
+  ]],
+  bunker: [[
+    '..MMMMMMMMMM..',
+    '.MNNNNNNNNNNM.',
+    'MNNKKKKKKKKNNM',
+    'MNNKKKKKKKKNNM',
+    'MNNNNNNNNNNNNM',
+    'MNNNNNNNNNNNNM',
+    'MMMMMMMMMMMMMM',
+    'YKYKYKYKYKYKYK',
+  ]],
   turret: [[
     '....RR....',
     '....RR....',
