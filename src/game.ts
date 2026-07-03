@@ -3,7 +3,7 @@ import { createShip, updateShip, killShip, updateFuel, SCROLL_SPEED } from './en
 import { createPools, firePlayer, updateProjectiles, type Pools } from './entities/projectiles';
 import { updateEnemies } from './entities/enemies';
 import { createSpawner, type Spawner } from './world/spawner';
-import { createPhases } from './world/phases';
+import { createPhases, PHASE3_END, BOSS_Y } from './world/phases';
 import { overlap, projectileHit } from './math/collision';
 import { isDown } from './input';
 import level1 from './levels/level1.json';
@@ -28,6 +28,8 @@ export interface Game {
   time: number;
   reset(): void;
   rebaseForLoop(baseY: number): void;
+  /** Dev cheat: jump just ahead of the boss trigger with full fuel. No-op mid-boss-fight. */
+  skipToBoss(): void;
   update(dt: number): void;
 }
 
@@ -67,6 +69,13 @@ export function createGame(): Game {
 
     rebaseForLoop(baseY: number): void {
       spawner.reset(baseY);
+    },
+
+    skipToBoss(): void {
+      // Rewinding into an active boss fight would strand scrollPaused=true
+      if (phases.name === 'boss') return;
+      ship.y = phases.loopN * PHASE3_END + BOSS_Y - 45;
+      ship.fuel = 100;
     },
 
     update(dt: number): void {

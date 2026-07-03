@@ -1,3 +1,4 @@
+/// <reference types="vite/client" />
 import { startLoop } from './loop';
 import { initInput, consumePress } from './input';
 import { loadSettings, settings, toggleInvertY, toggleMuted } from './settings';
@@ -61,6 +62,8 @@ startLoop(
           mode = { kind: 'paused' };
           break;
         }
+        // dev-only cheat, stripped from production builds
+        if (import.meta.env.DEV && consumePress('KeyS')) game.skipToBoss();
         game.update(dt);
         if (game.ship.lives <= 0) {
           mode = qualifies(game.score)
