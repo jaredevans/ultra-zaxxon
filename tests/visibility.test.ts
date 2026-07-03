@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { worldToScreen } from '../src/math/projection';
 import { ORIGIN, VIEW_W, VIEW_H } from '../src/render/renderer';
+import { BOSS_X_MIN, BOSS_X_MAX } from '../src/entities/boss';
 
 /**
  * Regression guard for the v1 launch bug: spec-sample projection constants
@@ -25,6 +26,13 @@ describe('playfield visibility invariants', () => {
 
   it('a floor target 40 units ahead at corridor center is visible', () => {
     expect(onScreen({ x: 50, y: cam + 40, z: 3 }, cam)).toBe(true);
+  });
+
+  it('the boss is visible at its camera-stop distance (30 ahead), across its tracked x range', () => {
+    // phases.ts halts the camera at BOSS_Y - 30; boss tracking clamps to [BOSS_X_MIN, BOSS_X_MAX]
+    for (const x of [BOSS_X_MIN, 50, BOSS_X_MAX]) {
+      expect(onScreen({ x, y: cam + 30, z: 18 }, cam), `boss x=${x}`).toBe(true);
+    }
   });
 
   it('near-wall base spans mostly on-screen (both edges at 10 ahead)', () => {

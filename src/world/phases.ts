@@ -60,7 +60,7 @@ export function createPhases(): Phases {
           ? 'fortress1'
           : localY < PHASE2_END
             ? 'space'
-            : localY < BOSS_Y - 60
+            : localY < BOSS_Y - 30 // stop close enough that the boss sits inside the visible window
               ? 'fortress2'
               : 'boss';
 

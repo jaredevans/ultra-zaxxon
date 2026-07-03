@@ -4,6 +4,10 @@ import type { Spawner } from '../world/spawner';
 
 export const BOSS_CORE_HP = 6;
 export const BOSS_CYCLES = 5;
+// Tracking clamp keeps the boss inside the diagonal visible window at its
+// camera-stop distance (30 ahead) even when the player hugs a corridor edge.
+export const BOSS_X_MIN = 15;
+export const BOSS_X_MAX = 68;
 const TRACK_SPEED = 8; // slow x tracking
 const CYCLE_INTERVAL = 3.0; // seconds between homing-missile volleys
 
@@ -48,6 +52,7 @@ export function updateBoss(
   // slow x tracking; core rides the body
   const dx = ship.x - body.x;
   body.x += Math.sign(dx) * Math.min(TRACK_SPEED * dt, Math.abs(dx));
+  body.x = Math.min(BOSS_X_MAX, Math.max(BOSS_X_MIN, body.x));
   core.x = body.x;
   core.y = body.y - body.hd - 2; // track core 2 units in front of body's front face
 

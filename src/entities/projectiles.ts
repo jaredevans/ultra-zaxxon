@@ -7,6 +7,10 @@ export const MAX_PLAYER_LIVE = 4; // the real difficulty knob for turret duels
 export const FIRE_INTERVAL = 0.25; // ≈4 shots/sec autofire
 export const PROJ_SPEED = SCROLL_SPEED * 3;
 export const PROJ_RANGE = 120; // y-units before despawn
+// Slight downward pitch (authentic Zaxxon slope). Floor targets top out at
+// z≈6.6 hittable band while the ship clamps to z≥8 — without this drop,
+// level shots could never reach a drum/turret on the floor.
+export const PLAYER_SHOT_DROP = -8;
 
 export interface Pools {
   player: Projectile[];
@@ -56,7 +60,7 @@ export function firePlayer(pools: Pools, ship: Ship): boolean {
     p.z = ship.z;
     p.vx = 0;
     p.vy = PROJ_SPEED;
-    p.vz = 0;
+    p.vz = PLAYER_SHOT_DROP;
     p.live = true;
     ship.fireCooldown = FIRE_INTERVAL;
     return true;
