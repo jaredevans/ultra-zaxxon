@@ -1,18 +1,29 @@
 import { describe, it, expect } from 'vitest';
 import { createPools, firePlayer, updateProjectiles } from '../src/entities/projectiles';
 import { createShip, Z_MIN } from '../src/entities/ship';
+import { createSpawner } from '../src/world/spawner';
 import { projectileHit } from '../src/math/collision';
 import type { AABB } from '../src/math/collision';
+import type { Segment } from '../src/entities/types';
 
 /**
- * Regression: floor targets were unhittable — drum hit band tops out at
- * z≈6.6 but level shots from the ship's minimum altitude (z=8) never
- * descend. Player shots now pitch slightly downward (authentic Zaxxon),
- * so diving low lets you hit drums.
+ * Regression: floor targets were unhittable — their hit band stopped below
+ * the ship's z>=8 clamp, so no shot could ever connect. Player shots now
+ * pitch slightly downward and floor targets carry a taller hitbox; diving
+ * low is how you strafe ground installations (authentic Zaxxon).
+ *
+ * Targets are spawned through the real spawner so these tests track the
+ * actual DEFS geometry, not hand-copied boxes.
  */
 const DT = 1 / 60;
-// Drum per spawner DEFS: hw 2.5, hd 2.5, hh 3 → z center 3
-const drum: AABB = { x: 50, y: 40, z: 3, hw: 2.5, hd: 2.5, hh: 3 };
+
+function spawnTarget(type: Segment['type']): AABB {
+  const spawner = createSpawner([{ type, y: 40, x: 50 }]);
+  spawner.update(0); // y=40 is inside the lookahead window
+  const e = spawner.entities.find((en) => en.live);
+  if (!e) throw new Error('target did not spawn');
+  return e;
+}
 
 function fireFrom(z: number) {
   const pools = createPools();
@@ -35,12 +46,20 @@ function sweepsThrough(pools: ReturnType<typeof createPools>, target: AABB): boo
   return false;
 }
 
-describe('floor targets are shootable from low altitude', () => {
+describe('floor targets are shootable from low altitude (real spawner geometry)', () => {
   it('a shot fired at minimum altitude hits a drum 40 units ahead', () => {
-    expect(sweepsThrough(fireFrom(Z_MIN), drum)).toBe(true);
+    expect(sweepsThrough(fireFrom(Z_MIN), spawnTarget('fuelDrum'))).toBe(true);
   });
 
-  it('a shot fired from high altitude passes over the same drum (dive-low risk/reward)', () => {
-    expect(sweepsThrough(fireFrom(50), drum)).toBe(false);
+  it('a shot fired from low cruise (z=12) hits a turret 40 units ahead', () => {
+    expect(sweepsThrough(fireFrom(12), spawnTarget('turret'))).toBe(true);
+  });
+
+  it('a shot fired from low cruise (z=12) hits a missile launcher 40 units ahead', () => {
+    expect(sweepsThrough(fireFrom(12), spawnTarget('missileLauncher'))).toBe(true);
+  });
+
+  it('a shot fired from high altitude passes over a drum (dive-low risk/reward)', () => {
+    expect(sweepsThrough(fireFrom(50), spawnTarget('fuelDrum'))).toBe(false);
   });
 });
