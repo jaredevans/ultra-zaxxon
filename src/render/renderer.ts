@@ -647,9 +647,22 @@ export function createRenderer(ctx: CanvasRenderingContext2D, atlas: Atlas) {
           key: depthKey(pr),
           id: 100000,
           draw: () => {
+            // short yellow laser bolt: a line trailing back along the flight path
             const s = project(pr, w.cameraY);
-            ctx.fillStyle = '#80ffff';
-            ctx.fillRect(s.sx - 2, s.sy - 4, 4, 8);
+            const tx = s.sx - 6 * (TILE_W / 2); // 6 world units of tail (−y)
+            const ty = s.sy + 6 * (TILE_H / 2);
+            ctx.strokeStyle = '#ffe040';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.moveTo(tx, ty);
+            ctx.lineTo(s.sx, s.sy);
+            ctx.stroke();
+            ctx.strokeStyle = '#fffbe0';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(tx, ty);
+            ctx.lineTo(s.sx, s.sy);
+            ctx.stroke();
           },
         });
       }
