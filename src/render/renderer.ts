@@ -383,6 +383,22 @@ export function createRenderer(ctx: CanvasRenderingContext2D, atlas: Atlas) {
             id: e.id,
             draw: () => drawZapHole(e, w.cameraY, w.time),
           });
+        } else if (e.kind === 'bomb') {
+          items.push({
+            key: depthKey(e),
+            id: e.id,
+            draw: () => {
+              const s = project(e, w.cameraY);
+              atlas.draw(ctx, 'bomb', 0, s.sx, s.sy);
+              // pulsing fuse glow while enroute
+              const pulse = 0.5 + 0.5 * Math.sin(w.time * 12 + e.id);
+              if (pulse > 0.45) {
+                ctx.fillStyle = pulse > 0.8 ? '#ffffff' : '#ffb040';
+                const sz = 3 + Math.round(pulse * 3);
+                ctx.fillRect(s.sx - sz / 2, s.sy - sz / 2, sz, sz);
+              }
+            },
+          });
         } else {
           const sprite = KIND_SPRITE[e.kind];
           if (!sprite) continue;
