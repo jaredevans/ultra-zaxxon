@@ -241,7 +241,18 @@ export function createRenderer(ctx: CanvasRenderingContext2D, atlas: Atlas) {
       for (const e of w.entities) {
         if (!e.live) continue;
         if (e.kind === 'wall' || e.kind === 'barrier') {
-          items.push({ key: depthKey(e), id: e.id, draw: () => drawWall(e, w.cameraY) });
+          // slice long walls into 10-unit columns, each depth-keyed at its own
+          // x — a single key at the wall's center masks point objects (shots,
+          // bursts, the ship) that sit in front of the wall at other x values
+          const xEnd = e.x + e.hw;
+          for (let x0 = e.x - e.hw; x0 < xEnd; x0 += 10) {
+            const x1 = Math.min(x0 + 10, xEnd);
+            items.push({
+              key: depthKey({ x: (x0 + x1) / 2, y: e.y, z: e.z }),
+              id: e.id * 1000 + Math.round(x0 - (e.x - e.hw)),
+              draw: () => drawWall(e, w.cameraY, x0, x1),
+            });
+          }
         } else {
           const sprite = KIND_SPRITE[e.kind];
           if (!sprite) continue;
@@ -378,12 +389,13 @@ export function createRenderer(ctx: CanvasRenderingContext2D, atlas: Atlas) {
     tri(pt(SHIP_MODEL.canL), pt(SHIP_MODEL.canR), pt(SHIP_MODEL.canF), '#70c8ff');
   }
 
-  function drawWall(e: Entity, cameraY: number): void {
-    // leading (near) face: projected quad from floor to wallHeight along the x span
+  /** Draws one 10-unit column slice [x0, x1] of a wall/barrier (see slicing note at the call site). */
+  function drawWall(e: Entity, cameraY: number, x0: number, x1: number): void {
+    // leading (near) face: projected quad from floor to wallHeight along the slice span
     const h = e.wallHeight;
     const yFace = e.y - e.hd;
-    const L = { x: e.x - e.hw, y: yFace, z: 0 };
-    const R = { x: e.x + e.hw, y: yFace, z: 0 };
+    const L = { x: x0, y: yFace, z: 0 };
+    const R = { x: x1, y: yFace, z: 0 };
     const bl = project(L, cameraY);
     const br = project(R, cameraY);
     const zPix = h * Z_SCALE;
@@ -410,8 +422,8 @@ export function createRenderer(ctx: CanvasRenderingContext2D, atlas: Atlas) {
     ctx.closePath();
     ctx.fill();
     // top slab
-    const TL = { x: e.x - e.hw, y: e.y + e.hd, z: h };
-    const TR = { x: e.x + e.hw, y: e.y + e.hd, z: h };
+    const TL = { x: x0, y: e.y + e.hd, z: h };
+    const TR = { x: x1, y: e.y + e.hd, z: h };
     const tl = project(TL, cameraY);
     const tr = project(TR, cameraY);
     ctx.fillStyle = '#78788f';
