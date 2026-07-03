@@ -219,6 +219,56 @@ describe('renderer draws live impact bursts', () => {
     expect(log).toContain('fill:#0a1020'); // the hole's lip actually drew
   });
 
+  it('renders every enemy kind as a 3D model without throwing', () => {
+    const log: string[] = [];
+    const renderer = createRenderer(stubCtx(log), recordingAtlas([]));
+    const kinds: Entity['kind'][] = [
+      'turret',
+      'radar',
+      'missileLauncher',
+      'parkedPlane',
+      'fighter',
+      'raider',
+      'cannon',
+      'bomb',
+      'missile',
+      'boss',
+      'bossCore',
+    ];
+    const entities: Entity[] = kinds.map((kind, i) => ({
+      id: i + 1,
+      kind,
+      x: 20 + i * 6,
+      y: 30 + i * 4,
+      z: 5,
+      hw: 3,
+      hd: 3,
+      hh: 3,
+      hp: 1,
+      points: 0,
+      live: true,
+      fireTimer: 0,
+      vx: 0,
+      vy: 0,
+      vz: 0,
+      wallHeight: 0,
+      stage: 0,
+    }));
+    const world: RenderWorld = {
+      ship: createShip(),
+      entities,
+      playerShots: [],
+      enemyShots: [],
+      cameraY: 0,
+      hasFloor: true,
+      time: 0.7,
+      floorGaps: [],
+      impacts: [],
+    };
+    expect(() => renderer.render(world, 0)).not.toThrow();
+    expect(log).toContain('fill:#8a8a9a'); // the turret's top face actually drew
+  });
+
   it('dead impacts draw nothing', () => {
     const calls: [SpriteName, number][] = [];
     const renderer = createRenderer(stubCtx(), recordingAtlas(calls));

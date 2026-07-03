@@ -21,19 +21,212 @@ export interface RenderWorld {
   time: number; // accumulated play time — drives pulsing effects
 }
 
+// Sprite fallback — only pickups keep sprites; enemies are 3D models below.
 const KIND_SPRITE: Partial<Record<Entity['kind'], SpriteName>> = {
   fuelDrum: 'fuelDrum',
-  turret: 'turret',
-  radar: 'radar',
-  missileLauncher: 'launcher',
-  parkedPlane: 'plane',
-  fighter: 'fighter',
-  raider: 'raider',
-  cannon: 'cannon',
-  bomb: 'bomb',
-  missile: 'missile',
-  boss: 'boss',
-  bossCore: 'bossCore',
+};
+
+/**
+ * Flat-shaded 3D enemy models, drawn through the same isometric projection
+ * as the world (like the player ship). Each model is a hand-ordered
+ * back-to-front face list in entity-local coordinates; ground models put
+ * their base at local z = -5 (ground entities' hitbox center sits at z=5).
+ */
+interface MFace {
+  p: readonly Vec3[];
+  c: string;
+}
+
+/** Axis-aligned box → its three camera-facing faces (side −x, front −y, top +z). */
+function boxF(
+  cx: number,
+  cy: number,
+  cz: number,
+  hw: number,
+  hd: number,
+  hh: number,
+  top: string,
+  front: string,
+  side: string,
+): MFace[] {
+  const x0 = cx - hw;
+  const x1 = cx + hw;
+  const y0 = cy - hd;
+  const y1 = cy + hd;
+  const z0 = cz - hh;
+  const z1 = cz + hh;
+  return [
+    {
+      p: [
+        { x: x0, y: y0, z: z0 },
+        { x: x0, y: y1, z: z0 },
+        { x: x0, y: y1, z: z1 },
+        { x: x0, y: y0, z: z1 },
+      ],
+      c: side,
+    },
+    {
+      p: [
+        { x: x0, y: y0, z: z0 },
+        { x: x1, y: y0, z: z0 },
+        { x: x1, y: y0, z: z1 },
+        { x: x0, y: y0, z: z1 },
+      ],
+      c: front,
+    },
+    {
+      p: [
+        { x: x0, y: y0, z: z1 },
+        { x: x1, y: y0, z: z1 },
+        { x: x1, y: y1, z: z1 },
+        { x: x0, y: y1, z: z1 },
+      ],
+      c: top,
+    },
+  ];
+}
+
+/** Delta-wing craft facing the player (nose toward −y); dz shifts it vertically. */
+function deltaModel(
+  body: string,
+  bodyDark: string,
+  under: string,
+  fin: string,
+  canopy: string,
+  dz = 0,
+): MFace[] {
+  const v = (x: number, y: number, z: number): Vec3 => ({ x, y, z: z + dz });
+  const nose = v(0, -5, 0.4);
+  const lt = v(5, 3.2, 0);
+  const rt = v(-5, 3.2, 0);
+  const tail = v(0, 2.8, 1.2);
+  const finT = v(0, 3.4, 3.2);
+  const spine = v(0, -0.5, 1);
+  return [
+    { p: [lt, rt, nose], c: under },
+    { p: [nose, lt, tail], c: bodyDark },
+    { p: [nose, rt, tail], c: body },
+    { p: [tail, finT, spine], c: fin },
+    { p: [v(-0.9, -1.4, 0.9), v(0.9, -1.4, 0.9), v(0, -3.6, 0.5)], c: canopy },
+  ];
+}
+
+const MODELS: Partial<Record<Entity['kind'], readonly MFace[]>> = {
+  turret: [
+    ...boxF(0, 0, -3, 3, 3, 2, '#8a8a9a', '#6a6a7c', '#50505e'),
+    ...boxF(0, 0, -0.2, 1.6, 1.6, 1.4, '#5c5c6e', '#48485a', '#3a3a48'),
+    {
+      p: [
+        { x: -0.4, y: -1.2, z: 0.4 },
+        { x: 0.4, y: -1.2, z: 0.4 },
+        { x: 0.4, y: -5.5, z: 1.2 },
+        { x: -0.4, y: -5.5, z: 1.2 },
+      ],
+      c: '#e03030',
+    },
+  ],
+  radar: [
+    ...boxF(0, 0, -3.8, 2, 2, 1.2, '#8a8a9a', '#6a6a7c', '#50505e'),
+    ...boxF(0, 0, -1.4, 0.6, 0.6, 1.2, '#6a6a7c', '#55556a', '#44445a'),
+    {
+      p: [
+        { x: -3, y: -0.5, z: -1.5 },
+        { x: 3, y: -0.5, z: -1.5 },
+        { x: 2.2, y: 1.5, z: 3 },
+        { x: -2.2, y: 1.5, z: 3 },
+      ],
+      c: '#70c8ff',
+    },
+    {
+      p: [
+        { x: -3, y: -0.5, z: -1.5 },
+        { x: -2.2, y: 1.5, z: 3 },
+        { x: -2.6, y: 1.8, z: 3 },
+        { x: -3.3, y: -0.2, z: -1.4 },
+      ],
+      c: '#3a7cb0',
+    },
+  ],
+  missileLauncher: [
+    ...boxF(0, 0, -3.5, 3.5, 3, 1.5, '#8a8a9a', '#6a6a7c', '#50505e'),
+    ...boxF(-1.4, 0, -0.8, 0.7, 0.7, 2.2, '#c8c8d8', '#a8a8bc', '#8a8a9e'),
+    ...boxF(1.4, 0, -0.8, 0.7, 0.7, 2.2, '#c8c8d8', '#a8a8bc', '#8a8a9e'),
+    {
+      p: [
+        { x: -2.1, y: -0.7, z: 1.4 },
+        { x: -0.7, y: -0.7, z: 1.4 },
+        { x: -1.4, y: 0, z: 2.6 },
+      ],
+      c: '#e03030',
+    },
+    {
+      p: [
+        { x: 0.7, y: -0.7, z: 1.4 },
+        { x: 2.1, y: -0.7, z: 1.4 },
+        { x: 1.4, y: 0, z: 2.6 },
+      ],
+      c: '#e03030',
+    },
+  ],
+  cannon: [
+    ...boxF(0, 0, -3.4, 3, 3, 1.6, '#6a7a8e', '#525f70', '#3c4654'),
+    {
+      p: [
+        { x: -0.8, y: 0, z: -2.4 },
+        { x: 0.8, y: 0, z: -2.4 },
+        { x: 0.6, y: -3.6, z: 1.8 },
+        { x: -0.6, y: -3.6, z: 1.8 },
+      ],
+      c: '#8fa2b8',
+    },
+    {
+      p: [
+        { x: -0.6, y: -3.6, z: 1.8 },
+        { x: 0.6, y: -3.6, z: 1.8 },
+        { x: 0.6, y: -4.2, z: 2.3 },
+        { x: -0.6, y: -4.2, z: 2.3 },
+      ],
+      c: '#101018',
+    },
+  ],
+  missile: [
+    ...boxF(0, 0, 0, 0.6, 1.8, 0.6, '#c8c8d8', '#a8a8bc', '#8a8a9e'),
+    {
+      p: [
+        { x: -0.6, y: -1.8, z: -0.6 },
+        { x: 0.6, y: -1.8, z: -0.6 },
+        { x: 0, y: -3.2, z: 0 },
+      ],
+      c: '#e03030',
+    },
+    {
+      p: [
+        { x: -0.6, y: 1.8, z: 0.6 },
+        { x: 0.6, y: 1.8, z: 0.6 },
+        { x: 0, y: 2.6, z: 1.4 },
+      ],
+      c: '#ff9020',
+    },
+  ],
+  bomb: [...boxF(0, 0, 0, 1.1, 1.1, 1.1, '#33333f', '#22222c', '#16161e')],
+  fighter: deltaModel('#e05050', '#a03030', '#5c1414', '#802020', '#70c8ff'),
+  raider: deltaModel('#30b060', '#1f7a42', '#124524', '#188048', '#70c8ff', -2.5),
+  parkedPlane: deltaModel('#9aa2b2', '#6f7787', '#3f4552', '#5a6272', '#70c8ff', -2.5),
+  boss: [
+    ...boxF(0, 0, 0, 12, 6, 18, '#565672', '#42425a', '#30303f'),
+    {
+      p: [
+        { x: -9, y: -6.05, z: -10 },
+        { x: 9, y: -6.05, z: -10 },
+        { x: 9, y: -6.05, z: 10 },
+        { x: -9, y: -6.05, z: 10 },
+      ],
+      c: '#33334a',
+    },
+    ...boxF(-12.5, 0, 8, 2, 4, 6, '#6a6a88', '#52526a', '#3e3e52'),
+    ...boxF(12.5, 0, 8, 2, 4, 6, '#6a6a88', '#52526a', '#3e3e52'),
+  ],
+  bossCore: [...boxF(0, 0, 0, 2, 1.2, 2, '#ffd0d0', '#ff6060', '#c03030')],
 };
 
 /**
@@ -383,23 +576,28 @@ export function createRenderer(ctx: CanvasRenderingContext2D, atlas: Atlas) {
             id: e.id,
             draw: () => drawZapHole(e, w.cameraY, w.time),
           });
-        } else if (e.kind === 'bomb') {
-          items.push({
-            key: depthKey(e),
-            id: e.id,
-            draw: () => {
-              const s = project(e, w.cameraY);
-              atlas.draw(ctx, 'bomb', 0, s.sx, s.sy);
-              // pulsing fuse glow while enroute
-              const pulse = 0.5 + 0.5 * Math.sin(w.time * 12 + e.id);
-              if (pulse > 0.45) {
-                ctx.fillStyle = pulse > 0.8 ? '#ffffff' : '#ffb040';
-                const sz = 3 + Math.round(pulse * 3);
-                ctx.fillRect(s.sx - sz / 2, s.sy - sz / 2, sz, sz);
-              }
-            },
-          });
         } else {
+          const model = MODELS[e.kind];
+          if (model) {
+            items.push({
+              key: depthKey(e),
+              id: e.id,
+              draw: () => {
+                drawModelAt(model, e, w.cameraY);
+                if (e.kind === 'bomb' || e.kind === 'bossCore') {
+                  // pulsing glow: bomb fuse enroute / boss weak-point beacon
+                  const s = project(e, w.cameraY);
+                  const pulse = 0.5 + 0.5 * Math.sin(w.time * 12 + e.id);
+                  if (pulse > 0.45) {
+                    ctx.fillStyle = pulse > 0.8 ? '#ffffff' : '#ffb040';
+                    const sz = 3 + Math.round(pulse * 3);
+                    ctx.fillRect(s.sx - sz / 2, s.sy - sz / 2, sz, sz);
+                  }
+                }
+              },
+            });
+            continue;
+          }
           const sprite = KIND_SPRITE[e.kind];
           if (!sprite) continue;
           items.push({
@@ -565,6 +763,26 @@ export function createRenderer(ctx: CanvasRenderingContext2D, atlas: Atlas) {
     tri(nose, rtip, tail, ship.bank > 0 ? '#7c7c92' : '#c8c8dc');
     tri(tail, fin, spine, '#4a5ae0');
     tri(pt(SHIP_MODEL.canL), pt(SHIP_MODEL.canR), pt(SHIP_MODEL.canF), '#70c8ff');
+  }
+
+  /** Fills a model's faces at an entity's position (faces are pre-ordered back-to-front). */
+  function drawModelAt(faces: readonly MFace[], e: Vec3, cameraY: number): void {
+    for (const f of faces) {
+      ctx.beginPath();
+      for (let i = 0; i < f.p.length; i++) {
+        const v = f.p[i];
+        if (!v) continue;
+        p.x = e.x + v.x;
+        p.y = e.y + v.y;
+        p.z = e.z + v.z;
+        const s = project(p, cameraY);
+        if (i === 0) ctx.moveTo(s.sx, s.sy);
+        else ctx.lineTo(s.sx, s.sy);
+      }
+      ctx.closePath();
+      ctx.fillStyle = f.c;
+      ctx.fill();
+    }
   }
 
   /**
