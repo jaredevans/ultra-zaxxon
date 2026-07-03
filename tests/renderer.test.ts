@@ -100,6 +100,33 @@ describe('renderer draws live impact bursts', () => {
     expect(burst).toBeGreaterThan(firstWallFill);
   });
 
+  it('a dying ship explodes bigger than the ship itself (scaled multi-burst)', () => {
+    const scales: number[] = [];
+    const atlas: Atlas = {
+      draw: (_ctx, name, _frame, _sx, _sy, scale) => {
+        if (name === 'explosion') scales.push(scale ?? 1);
+      },
+      size: () => ({ w: 16, h: 16 }),
+    };
+    const renderer = createRenderer(stubCtx(), atlas);
+    const ship = createShip();
+    ship.state = { kind: 'exploding', t: 0.6 };
+    const world: RenderWorld = {
+      ship,
+      entities: [],
+      playerShots: [],
+      enemyShots: [],
+      cameraY: 0,
+      hasFloor: false,
+      floorGaps: [],
+      impacts: [],
+    };
+    renderer.render(world, 0);
+    // main fireball scaled well past the ~40px ship model, plus satellite bursts
+    expect(Math.max(...scales)).toBeGreaterThanOrEqual(3);
+    expect(scales.length).toBeGreaterThanOrEqual(2);
+  });
+
   it('dead impacts draw nothing', () => {
     const calls: [SpriteName, number][] = [];
     const renderer = createRenderer(stubCtx(), recordingAtlas(calls));

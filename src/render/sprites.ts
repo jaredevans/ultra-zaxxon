@@ -25,6 +25,7 @@ export interface Atlas {
     frame: number,
     sx: number,
     sy: number,
+    scale?: number, // integer-ish upscale, nearest-neighbor (smoothing is off)
   ): void;
   size(name: SpriteName): { w: number; h: number };
 }
@@ -262,12 +263,14 @@ export function initAtlas(): Atlas {
   entries.set('shadow', [{ canvas: sh, w: 28, h: 10 }]);
 
   return {
-    draw(ctx, name, frame, sx, sy) {
+    draw(ctx, name, frame, sx, sy, scale = 1) {
       const frames = entries.get(name);
       if (!frames || frames.length === 0) return;
       const f = frames[Math.min(Math.max(0, frame), frames.length - 1)];
       if (!f) return;
-      ctx.drawImage(f.canvas, Math.round(sx - f.w / 2), Math.round(sy - f.h / 2));
+      const w = f.w * scale;
+      const h = f.h * scale;
+      ctx.drawImage(f.canvas, Math.round(sx - w / 2), Math.round(sy - h / 2), w, h);
     },
     size(name) {
       const f = entries.get(name)?.[0];

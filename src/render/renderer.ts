@@ -278,13 +278,20 @@ export function createRenderer(ctx: CanvasRenderingContext2D, atlas: Atlas) {
           });
         }
       } else {
-        const frame = Math.min(3, Math.floor((0.8 - ship.state.t) / 0.2));
+        // ship death: a fireball bigger than the ship itself — a large scaled
+        // main burst plus staggered satellite bursts around the hull
+        const age = (0.8 - ship.state.t) / 0.8; // 0 → 1 over the explosion
+        const frame = Math.min(3, Math.floor(age * 4));
         items.push({
           key: depthKey(ship),
           id: -1,
           draw: () => {
             const s = project(ship, w.cameraY);
-            atlas.draw(ctx, 'explosion', frame, s.sx, s.sy);
+            atlas.draw(ctx, 'explosion', frame, s.sx, s.sy, 4);
+            const satFrame = Math.min(3, Math.floor(age * 4 + 1));
+            atlas.draw(ctx, 'explosion', satFrame, s.sx - 18, s.sy + 8, 2);
+            atlas.draw(ctx, 'explosion', satFrame, s.sx + 16, s.sy - 6, 2);
+            atlas.draw(ctx, 'explosion', Math.max(0, satFrame - 1), s.sx + 6, s.sy + 14, 2);
           },
         });
       }
