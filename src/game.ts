@@ -170,6 +170,7 @@ function collide(game: Game): void {
         if (e.kind === 'wall' || e.kind === 'barrier') {
           // walls block shots — burst on the wall's near face
           spawnImpact(game.impacts, p.x, Math.min(p.y, e.y - e.hd), p.z);
+          play('wallHit');
           break;
         }
         e.hp -= 1;

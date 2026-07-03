@@ -1,7 +1,14 @@
 import { settings } from './settings';
 
 export type SfxName =
-  'laser' | 'enemyShot' | 'explosion' | 'fuelPickup' | 'klaxon' | 'bossHit' | 'extraLife';
+  | 'laser'
+  | 'enemyShot'
+  | 'explosion'
+  | 'fuelPickup'
+  | 'klaxon'
+  | 'bossHit'
+  | 'extraLife'
+  | 'wallHit';
 
 let ctx: AudioContext | null = null;
 const buffers = new Map<SfxName, AudioBuffer>();
@@ -41,6 +48,10 @@ const RECIPES: Record<SfxName, Recipe> = {
       Math.sin(2 * Math.PI * [523, 659, 784, 1047][Math.min(3, Math.floor(t * 8))]! * t) *
       env(t, d) *
       0.5,
+  },
+  wallHit: {
+    dur: 0.09, // short metallic thunk
+    gen: (t, d) => (noise() * 0.6 + Math.sin(2 * Math.PI * 480 * t) * 0.4) * env(t, d) ** 2 * 0.6,
   },
 };
 

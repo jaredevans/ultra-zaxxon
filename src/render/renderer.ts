@@ -303,7 +303,7 @@ export function createRenderer(ctx: CanvasRenderingContext2D, atlas: Atlas) {
         });
       }
 
-      // shot-vs-wall impact bursts: two quick explosion frames at the hit point
+      // shot-vs-wall impact bursts: bright core flash + growing explosion frames
       for (const im of w.impacts) {
         if (!im.live) continue;
         items.push({
@@ -311,7 +311,12 @@ export function createRenderer(ctx: CanvasRenderingContext2D, atlas: Atlas) {
           id: 100001,
           draw: () => {
             const s = project(im, w.cameraY);
-            atlas.draw(ctx, 'explosion', im.t > IMPACT_TIME / 2 ? 0 : 1, s.sx, s.sy);
+            const age = 1 - im.t / IMPACT_TIME; // 0 fresh → 1 expired
+            atlas.draw(ctx, 'explosion', age < 0.4 ? 1 : 2, s.sx, s.sy);
+            if (age < 0.3) {
+              ctx.fillStyle = '#ffffff';
+              ctx.fillRect(s.sx - 3, s.sy - 3, 6, 6);
+            }
           },
         });
       }

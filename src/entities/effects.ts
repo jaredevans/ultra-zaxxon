@@ -8,7 +8,7 @@ export interface Impact {
 }
 
 export const IMPACT_POOL = 8;
-export const IMPACT_TIME = 0.25;
+export const IMPACT_TIME = 0.4;
 
 export function createImpacts(): Impact[] {
   return Array.from({ length: IMPACT_POOL }, () => ({
