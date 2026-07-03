@@ -9,16 +9,20 @@ import { isDown } from './input';
 import level1 from './levels/level1.json';
 import type { Segment } from './entities/types';
 
+export const EXTRA_SHIP_AT = 10000;
+
 export interface Game {
   ship: Ship;
   spawner: Spawner;
   pools: Pools;
   cameraY: number;
   score: number;
+  bonusAwarded: boolean;
   hasFloor: boolean;
   floorGaps: readonly { yStart: number; yEnd: number }[];
   wallHeights: number[];
   time: number;
+  reset(): void;
   rebaseForLoop(baseY: number): void;
   update(dt: number): void;
 }
@@ -26,7 +30,7 @@ export interface Game {
 export function createGame(): Game {
   const ship = createShip();
   const pools = createPools();
-  const phases = createPhases();
+  let phases = createPhases();
   const spawner = createSpawner(
     level1.segments as unknown as Segment[],
     () => phases.tier.slotShrink,
@@ -38,10 +42,24 @@ export function createGame(): Game {
     pools,
     cameraY: 0,
     score: 0,
+    bonusAwarded: false,
     hasFloor: true,
     floorGaps: level1.floorGaps,
     wallHeights: [],
     time: 0,
+
+    reset(): void {
+      Object.assign(ship, createShip());
+      spawner.reset();
+      for (const p of pools.player) p.live = false;
+      for (const p of pools.enemy) p.live = false;
+      game.score = 0;
+      game.bonusAwarded = false;
+      game.cameraY = 0;
+      game.time = 0;
+      game.wallHeights.length = 0;
+      phases = createPhases();
+    },
 
     rebaseForLoop(baseY: number): void {
       spawner.reset(baseY);
@@ -69,6 +87,11 @@ export function createGame(): Game {
       if (isDown('Space')) firePlayer(pools, ship); // 6a
       updateProjectiles(pools, dt, game.cameraY); // 6b: records yPrev first
       collide(game); // 7: §5.4 priority
+      // bonus extra ship (once per game)
+      if (!game.bonusAwarded && game.score >= EXTRA_SHIP_AT) {
+        game.bonusAwarded = true;
+        ship.lives += 1;
+      }
       // 8: phase transitions
       phases.update(game, dt);
       // 9: shadow is a pure lookup at render time

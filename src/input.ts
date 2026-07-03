@@ -11,6 +11,7 @@ const GAME_KEYS = new Set([
   'KeyI',
   'KeyM',
   'Enter',
+  'Backspace',
 ]);
 
 export function initInput(): void {
