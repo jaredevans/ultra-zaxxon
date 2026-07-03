@@ -85,6 +85,10 @@ startLoop(
         if (consumePress('Enter') && entry.name.length > 0) {
           insertScore(entry.name, game.score);
           cachedScores = loadScores();
+          // Drain stale letter presses from name entry to prevent them from
+          // unexpectedly toggling settings (e.g., I/M) in attract mode next frame.
+          consumePress('KeyI');
+          consumePress('KeyM');
           mode = { kind: 'attract' };
         }
         break;
