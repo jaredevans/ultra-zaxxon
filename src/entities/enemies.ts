@@ -15,7 +15,8 @@ const TURRET_SHOT_SPEED = 55; // world units/sec along the aim vector
 const MISSILE_TRIGGER = 60; // launcher fires when player within this y
 const MISSILE_SPEED = 45; // toward player, -y
 const MISSILE_TURN = 30; // max lateral/vertical steer units/sec²-ish cap
-const FIGHTER_SPEED = 38; // convergence speed on (x, z)
+const FIGHTER_PATH_SPEED = 60; // how fast a fighter chases its patrol path point
+const FIGHTER_PATROL_TIME = 12; // seconds of roaming before it dives away
 const FIGHTER_INTERVAL = 2.2;
 const PLANE_TAKEOFF_RANGE = 55;
 // raider: parked ground ship that takes off once the player passes it,
@@ -92,35 +93,42 @@ export function updateEnemies(
         break;
       }
       case 'fighter': {
-        // swarm around the player rather than mirror them: each fighter's aim
-        // point orbits the ship with per-id amplitude and rhythm, and slower
-        // convergence adds lag so player movement isn't echoed 1:1.
-        // e.vx is repurposed as the patrol phase clock.
-        e.vx += dt * (1.2 + (e.id % 3) * 0.8);
-        const aimX = ship.x + (((e.id * 37) % 11) - 5) + Math.sin(e.vx) * (10 + (e.id % 3) * 5);
-        const aimZ = Math.min(
-          85,
-          Math.max(
-            6,
-            ship.z + (((e.id * 53) % 7) - 3) + Math.cos(e.vx * 0.8) * (5 + (e.id % 2) * 4),
-          ),
-        );
-        const speed = FIGHTER_SPEED * (0.55 + (e.id % 4) * 0.12);
-        e.y += (e.vy !== 0 ? e.vy : -10) * dt; // drifts toward player
+        // roam the visible field, not the player: each fighter chases its own
+        // Lissajous path point sweeping the corridor and altitude band ahead
+        // of the ship, taking AIMED potshots from wherever it is. After its
+        // patrol time it dives away downfield.
+        // e.vx = path phase clock; e.vy = patrol lifetime clock.
+        e.vx += dt;
+        e.vy += dt;
         // takeoff climb from parkedPlane conversion: apply and decay vz over ~1s
         if (e.vz > 0) {
           e.z += e.vz * dt;
           e.vz = Math.max(0, e.vz - 12 * dt);
         }
-        e.x += Math.sign(aimX - e.x) * Math.min(speed * dt, Math.abs(aimX - e.x));
-        e.z += Math.sign(aimZ - e.z) * Math.min(speed * 0.7 * dt, Math.abs(aimZ - e.z));
+        if (e.vy > FIGHTER_PATROL_TIME) {
+          e.y -= 70 * dt; // patrol over: dive past the player and away
+        } else {
+          const aimX = 50 + Math.sin(e.vx * (0.55 + (e.id % 3) * 0.25) + e.id) * 38;
+          const aimZ = 42 + Math.cos(e.vx * (0.4 + (e.id % 2) * 0.3) + e.id * 2) * 28;
+          const aimY = ship.y + 42 + Math.sin(e.vx * 0.5 + e.id) * 24;
+          e.x += steer(e.x, aimX, FIGHTER_PATH_SPEED * dt);
+          e.z += steer(e.z, Math.min(85, Math.max(10, aimZ)), FIGHTER_PATH_SPEED * 0.6 * dt);
+          e.y += steer(e.y, aimY, (scrollSpeed + 45) * dt);
+        }
         e.fireTimer -= dt;
-        if (e.fireTimer <= 0 && e.y - ship.y > 15 && e.y - ship.y < 60) {
+        const dy = e.y - ship.y;
+        if (e.fireTimer <= 0 && dy > 10 && dy < 70 && e.vy <= FIGHTER_PATROL_TIME) {
           e.fireTimer = FIGHTER_INTERVAL / tier.fireRateMul;
-          fireEnemy(pools, e, 0, -TURRET_SHOT_SPEED * tier.shotSpeedMul, 0);
+          // aimed shot — roaming means straight shots would never connect
+          const dx = ship.x - e.x;
+          const dyv = ship.y - e.y;
+          const dz = ship.z - e.z;
+          const len = Math.hypot(dx, dyv, dz) || 1;
+          const s = (TURRET_SHOT_SPEED * tier.shotSpeedMul) / len;
+          fireEnemy(pools, e, dx * s, dyv * s, dz * s);
           onShot?.();
         }
-        if (e.y < ship.y - 20) e.live = false; // flown past
+        if (e.y < ship.y - 20) e.live = false; // exited downfield
         break;
       }
       case 'raider': {

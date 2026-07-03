@@ -77,27 +77,55 @@ describe('raider life cycle: parked → overtake → attack run → exit', () =>
   });
 });
 
-describe('fighters swarm rather than mirror', () => {
-  it('a fighter keeps patrolling around a static player instead of settling on a point', () => {
+describe('fighters roam the screen instead of approaching the player', () => {
+  function roamSetup(shipX = 50) {
     const spawner = createSpawner([]);
     const pools = createPools();
     const ship = createShip();
-    ship.x = 50;
+    ship.x = shipX;
     ship.y = 0;
     ship.z = 30;
     const f = spawner.spawn('fighter', 50, 40, 30)!;
-    f.vy = -0.001; // effectively hold station in y for the test
+    return { spawner, pools, ship, f };
+  }
 
-    // settle in, then measure wander over the next 4 seconds
-    for (let i = 0; i < 120; i++) updateEnemies(spawner.entities, ship, pools, spawner, DT, TIER);
+  it('sweeps wide across the corridor and altitude band, staying ahead on screen', () => {
+    const { spawner, pools, ship, f } = roamSetup();
     let minX = Infinity;
     let maxX = -Infinity;
-    for (let i = 0; i < 240; i++) {
+    let minZ = Infinity;
+    let maxZ = -Infinity;
+    let stayedAhead = true;
+    for (let i = 0; i < 480; i++) {
+      // 8s of patrol
       updateEnemies(spawner.entities, ship, pools, spawner, DT, TIER);
       minX = Math.min(minX, f.x);
       maxX = Math.max(maxX, f.x);
+      minZ = Math.min(minZ, f.z);
+      maxZ = Math.max(maxZ, f.z);
+      if (f.y < ship.y + 5 || f.y > ship.y + 80) stayedAhead = false;
     }
-    expect(maxX - minX).toBeGreaterThan(14); // patrols a wide lane, not a fixed offset
+    expect(maxX - minX).toBeGreaterThan(40); // spans the field, not a lane near the player
+    expect(maxZ - minZ).toBeGreaterThan(22);
+    expect(stayedAhead).toBe(true);
+  });
+
+  it('takes aimed potshots (lateral velocity toward an off-axis player)', () => {
+    const { spawner, pools, ship } = roamSetup(12); // player hugs the left edge
+    let aimedShot = false;
+    for (let i = 0; i < 480; i++) {
+      updateEnemies(spawner.entities, ship, pools, spawner, DT, TIER);
+      if (pools.enemy.some((p) => p.live && p.vx < -3)) aimedShot = true;
+    }
+    expect(aimedShot).toBe(true);
+  });
+
+  it('leaves the field after its patrol time instead of lingering forever', () => {
+    const { spawner, pools, ship, f } = roamSetup();
+    for (let t = 0; t < 20 && f.live; t += DT) {
+      updateEnemies(spawner.entities, ship, pools, spawner, DT, TIER);
+    }
+    expect(f.live).toBe(false); // dove away downfield and despawned
   });
 });
 
