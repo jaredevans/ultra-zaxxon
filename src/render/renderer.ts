@@ -62,14 +62,22 @@ const SCENERY: readonly SpriteName[] = ['hangar', 'tower', 'silo', 'antenna', 'b
 // initialize (TDZ), throwing on first use and killing the rAF loop.
 const HOLE_PULSE = ['#16306e', '#2f5cc4', '#6b97f2', '#d7e6ff'] as const;
 
-// spiral galaxy in the upper-right sky, clear of the Saturn disc at (78, 84).
-// (Alphas stay high: specks rarely overlap, so they don't stack — a lone
-// ~15%-alpha speck over the near-black sky is invisible.)
-const GALAXY = { cx: 338, cy: 140, r: 72, tilt: -0.45, squash: 0.42 };
+// large spiral galaxy centered in the sky; Saturn (drawn after, at 78,84)
+// floats in front of its western edge. Alpha fades outward along the arms
+// and halo so the disk dissolves into the sky at the rim.
+const GALAXY = { cx: 240, cy: 150, r: 130, tilt: -0.35, squash: 0.4 };
 const GALAXY_ARM = [
-  'rgba(235,210,255,0.65)', // inner: warm lavender-white
-  'rgba(185,140,250,0.5)', // mid: violet
-  'rgba(110,130,235,0.38)', // outer: blue
+  'rgba(255,240,255,0.75)',
+  'rgba(225,190,255,0.6)',
+  'rgba(190,150,250,0.48)',
+  'rgba(150,130,245,0.36)',
+  'rgba(115,120,230,0.22)',
+  'rgba(90,105,200,0.12)',
+] as const;
+const GALAXY_HALO = [
+  'rgba(185,155,235,0.18)',
+  'rgba(140,120,220,0.11)',
+  'rgba(100,100,200,0.06)',
 ] as const;
 
 // items[] is reused across frames (the array itself is not reallocated).
@@ -96,32 +104,59 @@ export function createRenderer(ctx: CanvasRenderingContext2D, atlas: Atlas) {
     ctx.fillStyle = '#05050e';
     ctx.fillRect(0, 0, VIEW_W, VIEW_H);
 
-    // spiral galaxy: two parametric arms winding out from a bright core,
-    // squashed into a tilted disk — deterministic, stars shine through on top
+    // spiral galaxy: diffuse halo haze, then two dense tapering arms winding
+    // out from a luminous core — squashed into a tilted disk, alpha fading
+    // to nothing at the rim. Deterministic; stars shine through on top.
     {
       const { cx: gx, cy: gy, r: gr, tilt, squash } = GALAXY;
       const ct = Math.cos(tilt);
       const st = Math.sin(tilt);
+      const disk = (ang: number, rad: number): { px: number; py: number } => {
+        const x0 = Math.cos(ang) * rad;
+        const y0 = Math.sin(ang) * rad * squash;
+        return { px: gx + x0 * ct - y0 * st, py: gy + x0 * st + y0 * ct };
+      };
+
+      // halo: inter-arm haze with radial falloff
+      for (let i = 0; i < 170; i++) {
+        const rad = gr * Math.pow((hash(i * 193 + 7) % 100) / 100, 0.65);
+        const ang = ((hash(i * 89 + 3) % 628) / 100) * 1;
+        const { px, py } = disk(ang, rad);
+        const tier = Math.min(2, Math.floor((rad / gr) * 3));
+        ctx.fillStyle = GALAXY_HALO[tier] ?? GALAXY_HALO[2];
+        const sz = 3 + (hash(i * 41) % 3);
+        ctx.fillRect(px, py, sz, sz);
+      }
+
+      // arms: dense, thick near the hub, tapering and fading outward
       for (let arm = 0; arm < 2; arm++) {
-        for (let i = 0; i < 52; i++) {
-          const t = i / 52; // 0 core → 1 rim
-          const ang = arm * Math.PI + t * 3.8; // ~0.6 turn per arm
-          const rad = 5 + t * (gr - 5);
-          const x0 = Math.cos(ang) * rad;
-          const y0 = Math.sin(ang) * rad * squash;
-          const px = gx + x0 * ct - y0 * st;
-          const py = gy + x0 * st + y0 * ct;
-          const jx = (hash(arm * 131 + i * 97) % 7) - 3; // roughen the arm line
-          const jy = (hash(arm * 57 + i * 53) % 5) - 2;
-          const sz = Math.max(2, Math.round(5 - t * 3) + (hash(i * 29 + arm) % 2));
-          ctx.fillStyle = GALAXY_ARM[Math.min(2, Math.floor(t * 3))] ?? GALAXY_ARM[2];
-          ctx.fillRect(px + jx, py + jy, sz, sz);
+        for (let i = 0; i < 110; i++) {
+          const t = i / 110; // 0 core → 1 rim
+          const ang = arm * Math.PI + t * 4.2; // ~0.67 turn per arm
+          const rad = 4 + t * (gr - 4);
+          const { px, py } = disk(ang, rad);
+          const spread = 2 + (1 - t) * 8; // arm width tapers outward
+          ctx.fillStyle = GALAXY_ARM[Math.min(5, Math.floor(t * 6))] ?? GALAXY_ARM[5];
+          for (let s = 0; s < 2; s++) {
+            const jx = ((hash(arm * 131 + i * 97 + s * 17) % 100) / 50 - 1) * spread;
+            const jy = ((hash(arm * 57 + i * 53 + s * 23) % 100) / 50 - 1) * spread * 0.6;
+            const sz = Math.max(2, Math.round(4 - t * 2) + (hash(i * 29 + arm + s) % 2));
+            ctx.fillRect(px + jx, py + jy, sz, sz);
+          }
         }
       }
-      // luminous core: small stacked ellipse rows, brightest at center
-      for (let py = -6; py <= 6; py += 2) {
-        const half = Math.floor(11 * Math.sqrt(1 - (py / 7) * (py / 7)));
-        ctx.fillStyle = Math.abs(py) <= 2 ? 'rgba(255,244,230,0.95)' : 'rgba(255,224,200,0.6)';
+
+      // luminous core: layered ellipse rows with a soft outer glow
+      for (let py = -12; py <= 12; py += 2) {
+        const q = py / 13;
+        const half = Math.floor(20 * Math.sqrt(1 - q * q));
+        ctx.fillStyle = 'rgba(255,225,195,0.28)';
+        ctx.fillRect(gx - half, gy + py, half * 2, 2);
+      }
+      for (let py = -7; py <= 7; py += 2) {
+        const q = py / 8;
+        const half = Math.floor(12 * Math.sqrt(1 - q * q));
+        ctx.fillStyle = Math.abs(py) <= 2 ? 'rgba(255,247,235,0.95)' : 'rgba(255,230,205,0.65)';
         ctx.fillRect(gx - half, gy + py, half * 2, 2);
       }
     }
