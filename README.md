@@ -13,14 +13,27 @@ Open `http://localhost:5173` in a browser. The game boots immediately.
 
 ## Controls
 
-| Key        | Action                                |
-| ---------- | ------------------------------------- |
-| Arrow Keys | Move ship (Left/Right/Up/Down)        |
-| Space      | Fire laser                            |
-| P          | Pause / Resume                        |
-| I          | Toggle invert-Y (up = climb vs. dive) |
-| M          | Toggle sound on/off                   |
-| Enter      | Start game / Confirm high-score entry |
+| Key        | Action                                           |
+| ---------- | ------------------------------------------------ |
+| Arrow Keys | Left/Right strafe · Up = dive, Down = climb      |
+| Space      | Fire laser (hold for autofire, max 4 shots live) |
+| P          | Pause / Resume                                   |
+| I          | Invert Y (make Up = climb); persisted            |
+| M          | Toggle sound on/off; persisted                   |
+| Enter      | Start game / Confirm high-score entry            |
+| S          | _Dev builds only:_ skip ahead to the boss fight  |
+
+## How to Play
+
+**Altitude is the game.** The gap between your ship and its shadow is your height; the altimeter on the right shows it as a number, with ticks marking the height of every wall currently in play.
+
+- **Walls:** climb above the stripes or thread the slots — touching them is death.
+- **Ground targets** (fuel drums, turrets, radars, launchers): dive low (altimeter ≲ 10) and strafe them. They're solid — destroy them or fly over, not through.
+- **Fuel:** you drain constantly; shooting a drum restores 20. At zero you sink to the floor.
+- **Fighters** (open-space phase): they converge to your altitude — hold steady and they fly into your fire.
+- **Boss:** match the extra altimeter tick that appears during the fight, line up with the glowing core on its front, and land 6 hits before it finishes 5 missile volleys.
+
+You get 3 ships; a bonus ship arrives at 10,000 points. Surviving the boss (or killing it, +6000) loops the level at a faster, meaner tier.
 
 ## Features
 
@@ -37,4 +50,4 @@ Open `http://localhost:5173` in a browser. The game boots immediately.
 npm run build
 ```
 
-Outputs a static bundle to `dist/`. Deploy the contents of `dist/` to any static host (Netlify, GitHub Pages, S3, etc.).
+Outputs a static bundle to `dist/`. Deploy the contents of `dist/` to any static host (Netlify, GitHub Pages, S3, etc.). The S skip-key is compiled out of production builds.
