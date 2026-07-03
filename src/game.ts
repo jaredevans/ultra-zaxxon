@@ -1,11 +1,14 @@
 import type { Entity, Ship } from './entities/types';
 import { createShip, updateShip, killShip, SCROLL_SPEED } from './entities/ship';
 import { createPools, firePlayer, updateProjectiles, type Pools } from './entities/projectiles';
+import { updateEnemies, type DifficultyTier } from './entities/enemies';
 import { createSpawner, type Spawner } from './world/spawner';
 import { overlap, projectileHit } from './math/collision';
 import { isDown } from './input';
 import level1 from './levels/level1.json';
 import type { Segment } from './entities/types';
+
+const TIER_1: DifficultyTier = { fireRateMul: 1, shotSpeedMul: 1, planesActive: false };
 
 export interface Game {
   ship: Ship;
@@ -38,6 +41,7 @@ export function createGame(): Game {
       game.cameraY = ship.y;
       spawner.update(game.cameraY); // 4: spawn/despawn window
       // 5: entity AI — Task 10
+      updateEnemies(spawner.entities, ship, pools, spawner, dt, TIER_1);
       if (isDown('Space')) firePlayer(pools, ship); // 6a
       updateProjectiles(pools, dt, game.cameraY); // 6b: records yPrev first
       collide(game); // 7: §5.4 priority
