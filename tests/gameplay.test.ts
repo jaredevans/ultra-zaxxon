@@ -51,15 +51,24 @@ describe('floor targets are shootable from low altitude (real spawner geometry)'
     expect(sweepsThrough(fireFrom(Z_MIN), spawnTarget('fuelDrum'))).toBe(true);
   });
 
-  it('a shot fired from low cruise (z=12) hits a turret 40 units ahead', () => {
-    expect(sweepsThrough(fireFrom(12), spawnTarget('turret'))).toBe(true);
+  it('a shot fired from a low dive (z=10) hits a turret 40 units ahead', () => {
+    expect(sweepsThrough(fireFrom(10), spawnTarget('turret'))).toBe(true);
   });
 
-  it('a shot fired from low cruise (z=12) hits a missile launcher 40 units ahead', () => {
-    expect(sweepsThrough(fireFrom(12), spawnTarget('missileLauncher'))).toBe(true);
+  it('a shot fired from a low dive (z=10) hits a missile launcher 40 units ahead', () => {
+    expect(sweepsThrough(fireFrom(10), spawnTarget('missileLauncher'))).toBe(true);
   });
 
   it('a shot fired from high altitude passes over a drum (dive-low risk/reward)', () => {
     expect(sweepsThrough(fireFrom(50), spawnTarget('fuelDrum'))).toBe(false);
+  });
+});
+
+describe('air targets are hit by matching altitude', () => {
+  it('a fighter at the same altitude 40 units ahead is hit', () => {
+    const spawner = createSpawner([]);
+    const fighter = spawner.spawn('fighter', 50, 40, 30);
+    expect(fighter).not.toBeNull();
+    expect(sweepsThrough(fireFrom(30), fighter!)).toBe(true);
   });
 });

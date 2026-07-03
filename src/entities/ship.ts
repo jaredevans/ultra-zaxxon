@@ -44,7 +44,12 @@ export function updateShip(ship: Ship, dt: number, scrollSpeed: number): void {
   // state timers
   if (ship.state.kind === 'exploding') {
     ship.state.t -= dt;
-    if (ship.state.t <= 0) ship.state = { kind: 'respawning', t: RESPAWN_TIME };
+    if (ship.state.t <= 0) {
+      ship.state = { kind: 'respawning', t: RESPAWN_TIME };
+      // recenter only now — the explosion plays at the impact position
+      ship.x = 50;
+      ship.z = 50; // y is NOT rewound (spec §3.3)
+    }
     return; // input locked; no forward motion while exploding
   }
   if (ship.state.kind === 'respawning') {
@@ -80,7 +85,6 @@ export function killShip(ship: Ship): void {
   if (ship.state.kind !== 'alive') return;
   ship.state = { kind: 'exploding', t: EXPLODE_TIME };
   ship.lives -= 1;
-  ship.x = 50;
-  ship.z = 50; // y is NOT rewound (spec §3.3)
+  // x/z stay at the impact point; updateShip recenters at respawn
   ship.fuel = 100; // refuel on any death — prevents fuel-empty respawn loop (spec §7)
 }

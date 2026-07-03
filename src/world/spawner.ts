@@ -12,15 +12,16 @@ interface KindDef {
   hp: number;
   points: number;
 }
-// Floor targets share hh 4.5 so their hit band (0..9) overlaps low-flight
-// shots — the ship clamps to z>=8, so smaller hh values are unhittable.
-// It also makes them solid obstacles below z≈10 (authentic: strafe or avoid).
+// Floor targets share hh 5 so their hit band (0..10) overlaps flat shots
+// fired from a low dive (z 8–10.6) — the ship clamps to z>=8, so smaller
+// hh values are unhittable. Also makes them solid obstacles when flying
+// low (authentic: strafe or avoid).
 const DEFS: Record<string, KindDef> = {
-  fuelDrum: { hw: 2.5, hd: 2.5, hh: 4.5, hp: 1, points: 50 },
-  turret: { hw: 3, hd: 3, hh: 4.5, hp: 1, points: 200 },
-  radar: { hw: 3, hd: 3, hh: 4.5, hp: 1, points: 100 },
-  missileLauncher: { hw: 3.5, hd: 3, hh: 4.5, hp: 1, points: 300 },
-  parkedPlane: { hw: 4, hd: 4, hh: 4.5, hp: 1, points: 100 },
+  fuelDrum: { hw: 2.5, hd: 2.5, hh: 5, hp: 1, points: 50 },
+  turret: { hw: 3, hd: 3, hh: 5, hp: 1, points: 200 },
+  radar: { hw: 3, hd: 3, hh: 5, hp: 1, points: 100 },
+  missileLauncher: { hw: 3.5, hd: 3, hh: 5, hp: 1, points: 300 },
+  parkedPlane: { hw: 4, hd: 4, hh: 5, hp: 1, points: 100 },
   fighter: { hw: 3.5, hd: 3, hh: 1.5, hp: 1, points: 200 },
   missile: { hw: 1, hd: 2, hh: 1, hp: 1, points: 150 },
 };
