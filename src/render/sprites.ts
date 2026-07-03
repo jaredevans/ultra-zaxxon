@@ -147,10 +147,14 @@ const GRIDS: Record<string, string[][]> = {
     'DDKKKKDDDDKKKKDD',
   ]],
   bossCore: [[
-    '.RR.',
-    'RYYR',
-    'RYYR',
-    '.RR.',
+    '..RRRR..',
+    '.RYYYYR.',
+    'RYYWWYYR',
+    'RYWKKWYR',
+    'RYWKKWYR',
+    'RYYWWYYR',
+    '.RYYYYR.',
+    '..RRRR..',
   ]],
   explosion: [
     ['....', '.YY.', '.YY.', '....'],

@@ -82,11 +82,15 @@ export function createGame(): Game {
       game.cameraY = ship.y;
       game.hasFloor = phases.hasFloor; // space phase hides floor and shadow
       spawner.update(game.cameraY); // 4: spawn/despawn window
-      // rebuild wallHeights without allocation
+      // rebuild wallHeights without allocation; the boss core's altitude also
+      // gets a tick — the altimeter doubles as the aiming aid for the weak point
       game.wallHeights.length = 0;
       for (const e of spawner.entities) {
-        if (e.live && e.kind === 'wall' && !game.wallHeights.includes(e.wallHeight)) {
+        if (!e.live) continue;
+        if (e.kind === 'wall' && !game.wallHeights.includes(e.wallHeight)) {
           game.wallHeights.push(e.wallHeight);
+        } else if (e.kind === 'bossCore') {
+          game.wallHeights.push(e.z);
         }
       }
       // 5: entity AI — Task 10

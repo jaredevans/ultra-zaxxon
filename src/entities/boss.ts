@@ -27,9 +27,11 @@ export function spawnBoss(spawner: Spawner, y: number): BossRefs | null {
   body.hp = Infinity;
   body.points = 0;
   core.y = body.y - body.hd - 2; // 2 units in front of body's front face — outside the body AABB
-  core.hw = 2;
+  // Forgiving weak point: ±2 in every axis made the required aim window
+  // ~5 z-units with no visual feedback — unhittable by humans in practice.
+  core.hw = 4;
   core.hd = 2;
-  core.hh = 2;
+  core.hh = 4;
   core.hp = BOSS_CORE_HP;
   core.points = 6000; // 1000 + 5000 kill
   body.fireTimer = CYCLE_INTERVAL;

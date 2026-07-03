@@ -61,4 +61,40 @@ describe('boss core reachable through invulnerable body', () => {
     // Fix 1b: body (kind==='boss') is now a pass-through shield — shot must still be live
     expect(p.live).toBe(true);
   });
+
+  it('core hitbox is forgiving: a shot 3 units off in both x and z still connects', () => {
+    const game = createGame();
+    game.ship.y = SHIP_Y;
+
+    const refs = spawnBoss(game.spawner, BOSS_Y);
+    const { core } = refs!;
+
+    const p = game.pools.player[0]!;
+    p.live = true;
+    p.x = core.x + 3;
+    p.z = core.z + 3;
+    p.y = core.y - 2;
+    p.yPrev = p.y;
+    p.vy = 90;
+
+    game.update(1 / 60);
+
+    expect(core.hp).toBe(BOSS_CORE_HP - 1);
+    expect(p.live).toBe(false);
+  });
+
+  it('altimeter shows an aim tick at the core height while the boss is alive', () => {
+    const game = createGame();
+    game.ship.y = SHIP_Y;
+
+    const refs = spawnBoss(game.spawner, BOSS_Y);
+    const { core } = refs!;
+
+    game.update(1 / 60);
+    expect(game.wallHeights).toContain(core.z);
+
+    core.live = false;
+    game.update(1 / 60);
+    expect(game.wallHeights).not.toContain(core.z);
+  });
 });
