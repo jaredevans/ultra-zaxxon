@@ -17,11 +17,11 @@ describe('worldToScreen', () => {
     expect(b.sy - a.sy).toBe(10 * (TILE_H / 2));
   });
 
-  it('moves +y (forward) left-and-down: away from camera', () => {
+  it('moves +y (forward) right-and-up: the authentic Zaxxon slant', () => {
     const a = worldToScreen({ x: 0, y: 0, z: 0 }, 0, ORIGIN);
     const b = worldToScreen({ x: 0, y: 10, z: 0 }, 0, ORIGIN);
-    expect(b.sx - a.sx).toBe(-10 * (TILE_W / 2));
-    expect(b.sy - a.sy).toBe(10 * (TILE_H / 2));
+    expect(b.sx - a.sx).toBe(10 * (TILE_W / 2));
+    expect(b.sy - a.sy).toBe(-10 * (TILE_H / 2));
   });
 
   it('altitude moves the point straight up on screen, sx unchanged', () => {
@@ -38,16 +38,24 @@ describe('worldToScreen', () => {
   });
 });
 
-describe('depthKey', () => {
-  it('orders farther (x+y greater) entities later (drawn on top)', () => {
-    expect(depthKey({ x: 10, y: 20, z: 0 })).toBeLessThan(depthKey({ x: 10, y: 21, z: 0 }));
+describe('depthKey (viewer at bottom-left; far = up-right = small key)', () => {
+  it('orders farther (greater y) entities first (drawn behind)', () => {
+    expect(depthKey({ x: 10, y: 21, z: 0 })).toBeLessThan(depthKey({ x: 10, y: 20, z: 0 }));
   });
 
-  it('orders higher z later at the same x+y (drawn above)', () => {
+  it('orders higher z later at the same x−y (drawn above)', () => {
     expect(depthKey({ x: 10, y: 20, z: 5 })).toBeLessThan(depthKey({ x: 10, y: 20, z: 6 }));
   });
 
-  it('x+y dominates z (a wall 1 unit nearer sorts before anything on it)', () => {
-    expect(depthKey({ x: 10, y: 20, z: 90 })).toBeLessThan(depthKey({ x: 10, y: 21, z: 0 }));
+  it('x−y dominates z (a wall 1 unit nearer occludes anything on it)', () => {
+    expect(depthKey({ x: 10, y: 21, z: 90 })).toBeLessThan(depthKey({ x: 10, y: 20, z: 0 }));
+  });
+
+  it('ship behind a wall face draws over it; ship past the wall hides behind it', () => {
+    const wall = { x: 50, y: 500, z: 20 };
+    const shipApproaching = { x: 50, y: 495, z: 20 };
+    const shipPast = { x: 50, y: 505, z: 20 };
+    expect(depthKey(shipApproaching)).toBeGreaterThan(depthKey(wall)); // drawn after = in front
+    expect(depthKey(shipPast)).toBeLessThan(depthKey(wall)); // drawn before = hidden
   });
 });

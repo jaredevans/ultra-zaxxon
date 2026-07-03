@@ -1,11 +1,12 @@
 import type { Entity, Projectile, Ship, Vec3 } from '../entities/types';
-import { worldToScreen, depthKey, Z_SCALE } from '../math/projection';
+import { worldToScreen, depthKey, Z_SCALE, TILE_W, TILE_H } from '../math/projection';
 import type { Atlas, SpriteName } from './sprites';
 import { floorHeightAt } from '../world/shadow';
 
 export const VIEW_W = 480;
 export const VIEW_H = 640;
-export const ORIGIN = { x: VIEW_W / 2 + 140, y: 150 }; // tuned so corridor x∈[0,100] spans the view
+// Ship row (relY=0): sx = 40 + x*4 ∈ [72, 408] for x∈[8,92]; sy = 370 + x*2 - z*2.2.
+export const ORIGIN = { x: 40, y: 370 };
 
 export interface RenderWorld {
   ship: Ship;
@@ -59,12 +60,15 @@ export function createRenderer(ctx: CanvasRenderingContext2D, atlas: Atlas) {
         const a = project(p, cameraY);
         const even = ((wx + wy) / 10) % 2 === 0;
         ctx.fillStyle = even ? '#182838' : '#142030';
-        // 10×10 world tile as a screen parallelogram
+        // 10×10 world tile as a screen parallelogram:
+        // +x edge Δ(+10·TILE_W/2, +10·TILE_H/2), +y edge Δ(+10·TILE_W/2, −10·TILE_H/2)
+        const ex = 10 * (TILE_W / 2);
+        const ey = 10 * (TILE_H / 2);
         ctx.beginPath();
         ctx.moveTo(a.sx, a.sy);
-        ctx.lineTo(a.sx + 5 * 16, a.sy + 5 * 8); // +x edge
-        ctx.lineTo(a.sx + 5 * 16 - 5 * 16, a.sy + 5 * 8 + 5 * 8); // +y edge
-        ctx.lineTo(a.sx - 5 * 16, a.sy + 5 * 8);
+        ctx.lineTo(a.sx + ex, a.sy + ey); // +x edge
+        ctx.lineTo(a.sx + ex + ex, a.sy); // then +y edge
+        ctx.lineTo(a.sx + ex, a.sy - ey);
         ctx.closePath();
         ctx.fill();
       }
