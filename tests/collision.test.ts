@@ -42,8 +42,7 @@ describe('walls (SPECS §5.2 acceptance: clearance at wallHeight ± 1)', () => {
 
 describe('projectileHit (swept, SPECS §5.3)', () => {
   const target = box({ y: 100, hd: 0.5 }); // 1-unit-deep target
-  const proj = (yPrev: number, y: number) =>
-    ({ x: 0, y, z: 0, hw: 0.5, hd: 0.5, hh: 0.5, yPrev });
+  const proj = (yPrev: number, y: number) => ({ x: 0, y, z: 0, hw: 0.5, hd: 0.5, hh: 0.5, yPrev });
 
   it('does not tunnel a 1-unit target at max projectile speed (90 u/s @ 60 Hz = 1.5 u/tick)', () => {
     expect(projectileHit(proj(99.4, 100.9), target)).toBe(true);

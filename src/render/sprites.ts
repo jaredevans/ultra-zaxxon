@@ -1,15 +1,39 @@
 export type SpriteName =
-  | 'ship' | 'shadow' | 'turret' | 'radar' | 'fuelDrum' | 'launcher'
-  | 'missile' | 'fighter' | 'plane' | 'boss' | 'bossCore' | 'explosion';
+  | 'ship'
+  | 'shadow'
+  | 'turret'
+  | 'radar'
+  | 'fuelDrum'
+  | 'launcher'
+  | 'missile'
+  | 'fighter'
+  | 'plane'
+  | 'boss'
+  | 'bossCore'
+  | 'explosion';
 
 export interface Atlas {
-  draw(ctx: CanvasRenderingContext2D, name: SpriteName, frame: number, sx: number, sy: number): void;
+  draw(
+    ctx: CanvasRenderingContext2D,
+    name: SpriteName,
+    frame: number,
+    sx: number,
+    sy: number,
+  ): void;
   size(name: SpriteName): { w: number; h: number };
 }
 
 const PAL: Record<string, string> = {
-  W: '#e8e8e8', G: '#8a8a9a', D: '#4a4a5a', B: '#3050e0', C: '#70c8ff',
-  R: '#e03030', O: '#ff9020', Y: '#ffe040', K: '#101018', E: '#20a040',
+  W: '#e8e8e8',
+  G: '#8a8a9a',
+  D: '#4a4a5a',
+  B: '#3050e0',
+  C: '#70c8ff',
+  R: '#e03030',
+  O: '#ff9020',
+  Y: '#ffe040',
+  K: '#101018',
+  E: '#20a040',
   S: 'rgba(0,0,0,0.45)',
 };
 
@@ -162,10 +186,13 @@ export function initAtlas(): Atlas {
   };
 
   for (const [name, frames] of Object.entries(GRIDS)) {
-    entries.set(name, frames.map((rows) => {
-      const canvas = renderGrid(rows);
-      return { canvas, w: canvas.width, h: canvas.height };
-    }));
+    entries.set(
+      name,
+      frames.map((rows) => {
+        const canvas = renderGrid(rows);
+        return { canvas, w: canvas.width, h: canvas.height };
+      }),
+    );
   }
 
   // shadow: soft ellipse, code-drawn (no grid)
