@@ -1,9 +1,10 @@
 import { startLoop } from './loop';
 import { initInput } from './input';
 import { loadSettings } from './settings';
-
-export const VIEW_W = 480;
-export const VIEW_H = 640;
+import { initAtlas } from './render/sprites';
+import { createRenderer, VIEW_W, VIEW_H } from './render/renderer';
+import { createShip, updateShip, SCROLL_SPEED } from './entities/ship';
+import type { Entity, Projectile } from './entities/types';
 
 const canvas = document.querySelector<HTMLCanvasElement>('#game');
 if (!canvas) throw new Error('missing #game canvas');
@@ -25,15 +26,19 @@ fitCanvas();
 loadSettings();
 initInput();
 
-let t = 0;
+const atlas = initAtlas();
+const renderer = createRenderer(ctx, atlas);
+const ship = createShip();
+const entities: Entity[] = [];
+const projectiles: Projectile[] = [];
+let cameraY = 0;
+
 startLoop(
   (dt) => {
-    t += dt;
+    updateShip(ship, dt, SCROLL_SPEED);
+    cameraY = ship.y;
   },
-  () => {
-    ctx.fillStyle = '#000';
-    ctx.fillRect(0, 0, VIEW_W, VIEW_H);
-    ctx.fillStyle = '#0f0';
-    ctx.fillText(`loop ok t=${t.toFixed(1)}`, 10, 20);
+  (alpha) => {
+    renderer.render({ ship, entities, projectiles, cameraY, hasFloor: true, floorGaps: [] }, alpha);
   },
 );

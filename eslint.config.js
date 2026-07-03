@@ -5,4 +5,9 @@ export default ts.config(
   js.configs.recommended,
   ...ts.configs.recommended,
   { ignores: ['dist/'] },
+  {
+    rules: {
+      '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
+    },
+  },
 );
