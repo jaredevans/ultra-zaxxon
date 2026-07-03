@@ -2,6 +2,8 @@
 
 A browser-based isometric scrolling shooter inspired by the arcade classic Zaxxon — and escalated well past it: lightning pits, ambush raiders, predictive artillery, and a boss with an escort wing. Built with TypeScript and Vite — no runtime dependencies.
 
+![Ultra Zaxxon gameplay](uzaxxon.gif)
+
 ## Install & Run
 
 ```bash
