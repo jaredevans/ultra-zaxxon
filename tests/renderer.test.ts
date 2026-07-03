@@ -46,7 +46,7 @@ describe('renderer draws live impact bursts', () => {
       cameraY: 0,
       hasFloor: false,
       floorGaps: [],
-      impacts: [{ x: 50, y: 40, z: 10, t: IMPACT_TIME, live: true }],
+      impacts: [{ x: 50, y: 40, z: 10, t: IMPACT_TIME, dur: IMPACT_TIME, scale: 1, live: true }],
     };
     renderer.render(world, 0);
     expect(calls.some(([name]) => name === 'explosion')).toBe(true);
@@ -91,7 +91,7 @@ describe('renderer draws live impact bursts', () => {
       cameraY: 0,
       hasFloor: false,
       floorGaps: [],
-      impacts: [{ x: 10, y: 38, z: 10, t: IMPACT_TIME, live: true }],
+      impacts: [{ x: 10, y: 38, z: 10, t: IMPACT_TIME, dur: IMPACT_TIME, scale: 1, live: true }],
     };
     renderer.render(world, 0);
     const firstWallFill = log.indexOf('fill:#5a5a72');
@@ -138,7 +138,7 @@ describe('renderer draws live impact bursts', () => {
       cameraY: 0,
       hasFloor: false,
       floorGaps: [],
-      impacts: [{ x: 50, y: 40, z: 10, t: 0, live: false }],
+      impacts: [{ x: 50, y: 40, z: 10, t: 0, dur: IMPACT_TIME, scale: 1, live: false }],
     };
     renderer.render(world, 0);
     expect(calls.some(([name]) => name === 'explosion')).toBe(false);

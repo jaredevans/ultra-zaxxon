@@ -83,6 +83,27 @@ describe('boss core reachable through invulnerable body', () => {
     expect(p.live).toBe(false);
   });
 
+  it('killing the boss core spawns a jumbo boom', () => {
+    const game = createGame();
+    game.ship.y = SHIP_Y;
+    const refs = spawnBoss(game.spawner, BOSS_Y)!;
+    refs.core.hp = 1; // last hit
+
+    const p = game.pools.player[0]!;
+    p.live = true;
+    p.x = refs.core.x;
+    p.z = refs.core.z;
+    p.y = refs.core.y - 2;
+    p.yPrev = p.y;
+    p.vy = 90;
+
+    game.update(1 / 60);
+
+    expect(refs.core.hp).toBe(0);
+    const boom = game.impacts.find((i) => i.live && i.scale >= 5);
+    expect(boom).toBeDefined();
+  });
+
   it('skip-to-boss brings exactly the 3 escort fighters, not the skipped phase-2 waves', () => {
     const game = createGame();
     game.skipToBoss();

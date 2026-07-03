@@ -137,6 +137,7 @@ function collide(game: Game): void {
       if (overlap(ship, e)) {
         if (e.kind !== 'wall' && e.kind !== 'barrier') {
           e.live = false; // both die (spec §5.4-2)
+          spawnImpact(game.impacts, e.x, e.y, e.z, 2.5, 0.7);
         }
         killShip(ship);
         play('explosion');
@@ -177,6 +178,8 @@ function collide(game: Game): void {
         if (e.hp <= 0) {
           e.live = false;
           game.score += e.points;
+          // boss kill gets a jumbo fireball; regular enemies a medium boom
+          spawnImpact(game.impacts, e.x, e.y, e.z, e.kind === 'bossCore' ? 6 : 2.5, 0.7);
           play('explosion');
           onKill(game, e);
         } else if (e.kind === 'bossCore') {

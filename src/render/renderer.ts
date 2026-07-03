@@ -2,7 +2,7 @@ import type { Entity, Projectile, Ship, Vec3 } from '../entities/types';
 import { worldToScreen, depthKey, Z_SCALE, TILE_W, TILE_H } from '../math/projection';
 import type { Atlas, SpriteName } from './sprites';
 import { floorHeightAt } from '../world/shadow';
-import { IMPACT_TIME, type Impact } from '../entities/effects';
+import type { Impact } from '../entities/effects';
 
 export const VIEW_W = 480;
 export const VIEW_H = 640;
@@ -321,7 +321,7 @@ export function createRenderer(ctx: CanvasRenderingContext2D, atlas: Atlas) {
         });
       }
 
-      // shot-vs-wall impact bursts: bright core flash + growing explosion frames
+      // impact bursts: wall sparks (scale 1) and enemy/boss booms (scale >= 2)
       for (const im of w.impacts) {
         if (!im.live) continue;
         items.push({
@@ -329,11 +329,33 @@ export function createRenderer(ctx: CanvasRenderingContext2D, atlas: Atlas) {
           id: 100001,
           draw: () => {
             const s = project(im, w.cameraY);
-            const age = 1 - im.t / IMPACT_TIME; // 0 fresh → 1 expired
-            atlas.draw(ctx, 'explosion', age < 0.4 ? 1 : 2, s.sx, s.sy);
-            if (age < 0.3) {
-              ctx.fillStyle = '#ffffff';
-              ctx.fillRect(s.sx - 3, s.sy - 3, 6, 6);
+            const age = 1 - im.t / im.dur; // 0 fresh → 1 expired
+            if (im.scale >= 2) {
+              // multi-burst fireball, same treatment as the ship's death
+              const frame = Math.min(3, Math.floor(age * 4));
+              atlas.draw(ctx, 'explosion', frame, s.sx, s.sy, im.scale);
+              const satFrame = Math.min(3, frame + 1);
+              const off = 5 * im.scale;
+              atlas.draw(ctx, 'explosion', satFrame, s.sx - off, s.sy + off * 0.4, im.scale / 2);
+              atlas.draw(
+                ctx,
+                'explosion',
+                satFrame,
+                s.sx + off * 0.9,
+                s.sy - off * 0.3,
+                im.scale / 2,
+              );
+              if (age < 0.25) {
+                ctx.fillStyle = '#ffffff';
+                const f = 2 * im.scale;
+                ctx.fillRect(s.sx - f / 2, s.sy - f / 2, f, f);
+              }
+            } else {
+              atlas.draw(ctx, 'explosion', age < 0.4 ? 1 : 2, s.sx, s.sy);
+              if (age < 0.3) {
+                ctx.fillStyle = '#ffffff';
+                ctx.fillRect(s.sx - 3, s.sy - 3, 6, 6);
+              }
             }
           },
         });

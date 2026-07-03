@@ -89,6 +89,30 @@ describe('shots burst on walls', () => {
   });
 });
 
+describe('destroyed enemies explode', () => {
+  it('killing a drum spawns a scaled boom at its position', async () => {
+    const { createGame } = await import('../src/game');
+    const game = createGame();
+    // level1 drum: y=120, x=40, z center 4.5
+    game.ship.y = 95;
+    game.ship.z = 50;
+    const shot = game.pools.player[0]!;
+    shot.live = true;
+    shot.x = 40;
+    shot.z = 4.5;
+    shot.y = 118;
+    shot.yPrev = 118;
+    shot.vy = 90;
+
+    game.update(DT);
+
+    expect(shot.live).toBe(false);
+    const boom = game.impacts.find((i) => i.live && i.scale >= 2);
+    expect(boom).toBeDefined();
+    expect(boom!.x).toBeCloseTo(40, 0);
+  });
+});
+
 describe('air targets are hit by matching altitude', () => {
   it('a fighter at the same altitude 40 units ahead is hit', () => {
     const spawner = createSpawner([]);
