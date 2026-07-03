@@ -160,7 +160,7 @@ function drawAttract(ctx: CanvasRenderingContext2D, scores: ScoreRow[]): void {
 
   ctx.font = 'bold 48px monospace';
   ctx.fillStyle = '#ffe040';
-  ctx.fillText('ZAXXON', VIEW_W / 2, 80);
+  ctx.fillText('ULTRA ZAXXON', VIEW_W / 2, 80);
 
   ctx.font = '16px monospace';
   ctx.fillStyle = '#e8e8e8';
