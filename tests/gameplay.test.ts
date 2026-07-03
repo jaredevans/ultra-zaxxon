@@ -59,6 +59,10 @@ describe('floor targets are shootable from low altitude (real spawner geometry)'
     expect(sweepsThrough(fireFrom(10), spawnTarget('missileLauncher'))).toBe(true);
   });
 
+  it('a parked raider is strafeable like other ground targets', () => {
+    expect(sweepsThrough(fireFrom(10), spawnTarget('raider'))).toBe(true);
+  });
+
   it('a shot fired from high altitude passes over a drum (dive-low risk/reward)', () => {
     expect(sweepsThrough(fireFrom(50), spawnTarget('fuelDrum'))).toBe(false);
   });

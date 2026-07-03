@@ -17,6 +17,15 @@ const MISSILE_TURN = 30; // max lateral/vertical steer units/sec²-ish cap
 const FIGHTER_SPEED = 38; // convergence speed on (x, z)
 const FIGHTER_INTERVAL = 2.2;
 const PLANE_TAKEOFF_RANGE = 55;
+// raider: parked ground ship that takes off once the player passes it,
+// sweeps wide around the ship to get ahead, then turns for a head-on run
+const RAIDER_PASS_MARGIN = 5; // "passed by" once this far behind the player
+const RAIDER_OVERTAKE_SPEED = 75; // world u/s while looping downfield
+const RAIDER_AHEAD_DIST = 55; // how far ahead it gets before turning
+const RAIDER_ATTACK_SPEED = 55; // world u/s on the head-on run
+const RAIDER_SIDE_OFFSET = 14; // lateral berth while sweeping past the ship
+const RAIDER_INTERVAL = 1.8; // shot cadence during the attack run
+const RAIDER_AIR_POINTS = 300;
 
 /** Module-level steer helper — avoids a per-missile closure allocation each frame. */
 function steer(cur: number, target: number, maxDelta: number): number {
@@ -97,6 +106,48 @@ export function updateEnemies(
           onShot?.();
         }
         if (e.y < ship.y - 20) e.live = false; // flown past
+        break;
+      }
+      case 'raider': {
+        // stage 0: parked. stage 1: takeoff + overtake. stage 2: attack run. stage 3: exit.
+        if (e.stage === 0) {
+          if (e.y < ship.y - RAIDER_PASS_MARGIN) {
+            e.stage = 1;
+            e.points = RAIDER_AIR_POINTS;
+            e.hw = 3.5;
+            e.hh = 1.5; // airborne profile
+            e.vx = ship.x >= 50 ? -1 : 1; // sweep past on the roomier side
+          }
+          break;
+        }
+        if (e.stage === 1) {
+          e.y += RAIDER_OVERTAKE_SPEED * dt;
+          e.z += steer(e.z, ship.z + 6, 30 * dt);
+          const lane = Math.min(95, Math.max(5, ship.x + e.vx * RAIDER_SIDE_OFFSET));
+          e.x += steer(e.x, lane, 40 * dt);
+          if (e.y > ship.y + RAIDER_AHEAD_DIST) {
+            e.stage = 2;
+            // fire early in the dive: the closing window is short (~0.5s in-game)
+            e.fireTimer = 0.15;
+          }
+          break;
+        }
+        if (e.stage === 2) {
+          e.y -= RAIDER_ATTACK_SPEED * dt;
+          e.x += steer(e.x, ship.x, 30 * dt);
+          e.z += steer(e.z, ship.z, 25 * dt);
+          e.fireTimer -= dt;
+          const dy = e.y - ship.y;
+          if (e.fireTimer <= 0 && dy > 15 && dy < 60) {
+            e.fireTimer = RAIDER_INTERVAL / tier.fireRateMul;
+            fireEnemy(pools, e, 0, -TURRET_SHOT_SPEED * tier.shotSpeedMul, 0);
+            onShot?.();
+          }
+          if (e.y < ship.y - 8) e.stage = 3; // run complete — flew past the player
+          break;
+        }
+        // stage 3: keep flying downfield; the despawn margin reaps it
+        e.y -= RAIDER_ATTACK_SPEED * dt;
         break;
       }
       case 'parkedPlane': {

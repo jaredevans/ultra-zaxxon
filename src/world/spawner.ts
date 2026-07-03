@@ -27,6 +27,8 @@ const DEFS: Record<string, KindDef> = {
   // trigger footprint only — the overhead bolt check in game.ts ignores z,
   // and the flat profile keeps it out of reach of shots (holes can't be destroyed)
   zapHole: { hw: 3.5, hd: 3.5, hh: 0.3, hp: Infinity, points: 0 },
+  // parked profile; takeoff (enemies.ts) switches it to an airborne hitbox + 300 pts
+  raider: { hw: 4, hd: 4, hh: 5, hp: 1, points: 150 },
 };
 
 export interface Spawner {
@@ -54,6 +56,7 @@ function blankEntity(): Entity {
     vy: 0,
     vz: 0,
     wallHeight: 0,
+    stage: 0,
   };
 }
 
@@ -83,6 +86,7 @@ export function createSpawner(
     e.vy = 0;
     e.vz = 0;
     e.wallHeight = 0;
+    e.stage = 0;
     if (seg.type === 'wall' || seg.type === 'barrier') {
       let xStart = seg.xStart ?? 0;
       let xEnd = seg.xEnd ?? 100;
@@ -149,6 +153,7 @@ export function createSpawner(
       e.vy = 0;
       e.vz = 0;
       e.wallHeight = 0;
+      e.stage = 0;
       return e;
     },
     reset(offsetY = 0): void {

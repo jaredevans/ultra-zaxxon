@@ -14,6 +14,7 @@ export type SpriteName =
   | 'missile'
   | 'fighter'
   | 'plane'
+  | 'raider'
   | 'boss'
   | 'bossCore'
   | 'explosion';
@@ -187,6 +188,14 @@ const GRIDS: Record<string, string[][]> = {
     'GGGGGGGGGGGGGG',
     '.GGGGDDDDGGGG.',
     '....GG..GG....',
+  ]],
+  raider: [[
+    '......EE......',
+    '.....EEEE.....',
+    'E...EDCCDE...E',
+    'EEEEEEEEEEEEEE',
+    '.EEEEDDDDEEEE.',
+    '....EE..EE....',
   ]],
   boss: [[
     '....DDDDDDDD....',

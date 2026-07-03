@@ -94,6 +94,7 @@ describe('renderer draws live impact bursts', () => {
       vy: 0,
       vz: 0,
       wallHeight: 20,
+      stage: 0,
     };
     const world: RenderWorld = {
       ship: createShip(),
@@ -201,6 +202,7 @@ describe('renderer draws live impact bursts', () => {
       vy: 0,
       vz: 0,
       wallHeight: 0,
+      stage: 0,
     };
     const world: RenderWorld = {
       ship: createShip(),

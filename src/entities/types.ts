@@ -37,7 +37,8 @@ export type EntityKind =
   | 'missile'
   | 'boss'
   | 'bossCore' // Zaxxon weak point (small AABB)
-  | 'zapHole'; // pulsing floor pit; bolts any ship overhead regardless of altitude
+  | 'zapHole' // pulsing floor pit; bolts any ship overhead regardless of altitude
+  | 'raider'; // parked ground ship: takes off if passed, loops ahead, attacks head-on
 
 export interface Entity extends AABB {
   id: number;
@@ -50,6 +51,7 @@ export interface Entity extends AABB {
   vy: number;
   vz: number;
   wallHeight: number; // walls/barriers only; 0 otherwise (drives stripe rendering + altimeter ticks)
+  stage: number; // multi-phase AI progression (raiders); 0 otherwise
 }
 
 /** One row of levels/level1.json */

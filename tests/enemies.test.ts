@@ -31,6 +31,49 @@ describe('fighters move independently', () => {
   });
 });
 
+describe('raider life cycle: parked → overtake → attack run → exit', () => {
+  function setup() {
+    const spawner = createSpawner([]);
+    const pools = createPools();
+    const ship = createShip();
+    ship.x = 50;
+    ship.y = 40;
+    ship.z = 30;
+    const raider = spawner.spawn('raider', 70, 30, 5)!; // already behind the ship
+    return { spawner, pools, ship, raider };
+  }
+
+  it('stays parked while still ahead of the player', () => {
+    const { spawner, pools, ship, raider } = setup();
+    raider.y = 90; // ahead — player hasn't passed it
+    for (let i = 0; i < 30; i++) updateEnemies(spawner.entities, ship, pools, spawner, DT, TIER);
+    expect(raider.stage).toBe(0);
+    expect(raider.y).toBe(90); // parked means parked
+  });
+
+  it('takes off once passed, with the airborne bounty', () => {
+    const { spawner, pools, ship, raider } = setup();
+    updateEnemies(spawner.entities, ship, pools, spawner, DT, TIER);
+    expect(raider.stage).toBe(1);
+    expect(raider.points).toBe(300);
+  });
+
+  it('overtakes to well ahead, turns around, attacks, then exits downfield', () => {
+    const { spawner, pools, ship, raider } = setup();
+    let reachedAhead = false;
+    let fired = false;
+    for (let t = 0; t < 30 && raider.stage < 3; t += DT) {
+      updateEnemies(spawner.entities, ship, pools, spawner, DT, TIER);
+      if (raider.y > ship.y + 50) reachedAhead = true;
+      if (pools.enemy.some((p) => p.live)) fired = true;
+    }
+    expect(reachedAhead).toBe(true); // swung around to the far end
+    expect(raider.stage).toBe(3); // completed the attack run and passed the player
+    expect(fired).toBe(true); // shot at the player on the way in
+    expect(raider.y).toBeLessThan(ship.y); // continuing downfield to despawn
+  });
+});
+
 describe('boss maneuvers', () => {
   it('sweeps laterally and bobs in altitude even when the player holds still', () => {
     const spawner = createSpawner([]);
