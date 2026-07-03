@@ -1,6 +1,7 @@
 import type { Entity, Ship } from './entities/types';
 import { createShip, updateShip, killShip, updateFuel, SCROLL_SPEED } from './entities/ship';
 import { createPools, firePlayer, updateProjectiles, type Pools } from './entities/projectiles';
+import { createImpacts, spawnImpact, updateImpacts, type Impact } from './entities/effects';
 import { updateEnemies } from './entities/enemies';
 import { createSpawner, type Spawner } from './world/spawner';
 import { createPhases, PHASE3_END, BOSS_Y } from './world/phases';
@@ -25,6 +26,7 @@ export interface Game {
   hasFloor: boolean;
   floorGaps: readonly { yStart: number; yEnd: number }[];
   wallHeights: number[];
+  impacts: Impact[];
   time: number;
   reset(): void;
   rebaseForLoop(baseY: number): void;
@@ -52,6 +54,7 @@ export function createGame(): Game {
     hasFloor: true,
     floorGaps: level1.floorGaps,
     wallHeights: [],
+    impacts: createImpacts(),
     time: 0,
 
     reset(): void {
@@ -59,6 +62,7 @@ export function createGame(): Game {
       spawner.reset();
       for (const p of pools.player) p.live = false;
       for (const p of pools.enemy) p.live = false;
+      for (const i of game.impacts) i.live = false;
       game.score = 0;
       game.bonusAwarded = false;
       game.cameraY = 0;
@@ -106,6 +110,7 @@ export function createGame(): Game {
       updateEnemies(spawner.entities, ship, pools, spawner, dt, phases.tier, onEnemyShot);
       if (isDown('Space') && firePlayer(pools, ship)) play('laser'); // 6a
       updateProjectiles(pools, dt, game.cameraY); // 6b: records yPrev first
+      updateImpacts(game.impacts, dt);
       collide(game); // 7: §5.4 priority
       // bonus extra ship (once per game)
       if (!game.bonusAwarded && game.score >= EXTRA_SHIP_AT) {
@@ -162,7 +167,11 @@ function collide(game: Game): void {
         // shots continue scanning so the core ahead of it can be targeted.
         if (e.kind === 'boss') continue;
         p.live = false;
-        if (e.kind === 'wall' || e.kind === 'barrier') break; // walls block shots
+        if (e.kind === 'wall' || e.kind === 'barrier') {
+          // walls block shots — burst on the wall's near face
+          spawnImpact(game.impacts, p.x, Math.min(p.y, e.y - e.hd), p.z);
+          break;
+        }
         e.hp -= 1;
         if (e.hp <= 0) {
           e.live = false;

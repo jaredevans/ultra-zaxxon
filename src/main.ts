@@ -115,6 +115,7 @@ startLoop(
         cameraY: game.cameraY,
         hasFloor: game.hasFloor,
         floorGaps: game.floorGaps,
+        impacts: game.impacts,
       },
       alpha,
     );

@@ -64,6 +64,31 @@ describe('floor targets are shootable from low altitude (real spawner geometry)'
   });
 });
 
+describe('shots burst on walls', () => {
+  it('a shot that hits a wall dies and spawns an impact burst there', async () => {
+    const { createGame } = await import('../src/game');
+    const game = createGame();
+    // level1 wall: y=220, full corridor, height 20 (z band 0..20)
+    game.ship.y = 190;
+    game.ship.z = 50; // safely above the wall
+    const shot = game.pools.player[0]!;
+    shot.live = true;
+    shot.x = 50;
+    shot.z = 10; // inside the wall's z band
+    shot.y = 218;
+    shot.yPrev = 218;
+    shot.vy = 90;
+
+    game.update(DT);
+
+    expect(shot.live).toBe(false);
+    const burst = game.impacts.find((i) => i.live);
+    expect(burst).toBeDefined();
+    expect(burst!.x).toBeCloseTo(50, 0);
+    expect(burst!.z).toBeCloseTo(10, 0);
+  });
+});
+
 describe('air targets are hit by matching altitude', () => {
   it('a fighter at the same altitude 40 units ahead is hit', () => {
     const spawner = createSpawner([]);

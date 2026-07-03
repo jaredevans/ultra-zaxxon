@@ -2,6 +2,7 @@ import type { Entity, Projectile, Ship, Vec3 } from '../entities/types';
 import { worldToScreen, depthKey, Z_SCALE, TILE_W, TILE_H } from '../math/projection';
 import type { Atlas, SpriteName } from './sprites';
 import { floorHeightAt } from '../world/shadow';
+import { IMPACT_TIME, type Impact } from '../entities/effects';
 
 export const VIEW_W = 480;
 export const VIEW_H = 640;
@@ -16,6 +17,7 @@ export interface RenderWorld {
   cameraY: number;
   hasFloor: boolean;
   floorGaps: readonly { yStart: number; yEnd: number }[];
+  impacts: readonly Impact[];
 }
 
 const KIND_SPRITE: Partial<Record<Entity['kind'], SpriteName>> = {
@@ -297,6 +299,19 @@ export function createRenderer(ctx: CanvasRenderingContext2D, atlas: Atlas) {
             const s = project(pr, w.cameraY);
             ctx.fillStyle = '#ff6060';
             ctx.fillRect(s.sx - 2, s.sy - 4, 4, 8);
+          },
+        });
+      }
+
+      // shot-vs-wall impact bursts: two quick explosion frames at the hit point
+      for (const im of w.impacts) {
+        if (!im.live) continue;
+        items.push({
+          key: depthKey(im),
+          id: 100001,
+          draw: () => {
+            const s = project(im, w.cameraY);
+            atlas.draw(ctx, 'explosion', im.t > IMPACT_TIME / 2 ? 0 : 1, s.sx, s.sy);
           },
         });
       }
