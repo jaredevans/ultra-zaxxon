@@ -15,13 +15,14 @@ export interface BossRefs {
 
 export function spawnBoss(spawner: Spawner, y: number): BossRefs | null {
   const body = spawner.spawn('boss', 50, y, 18);
-  const core = spawner.spawn('bossCore', 50, y - 6, 10);
+  const core = spawner.spawn('bossCore', 50, y - 6, 10); // y adjusted below once body dims are set
   if (!body || !core) return null;
   body.hw = 12;
   body.hd = 6;
   body.hh = 18;
   body.hp = Infinity;
   body.points = 0;
+  core.y = body.y - body.hd - 2; // 2 units in front of body's front face — outside the body AABB
   core.hw = 2;
   core.hd = 2;
   core.hh = 2;
@@ -48,7 +49,7 @@ export function updateBoss(
   const dx = ship.x - body.x;
   body.x += Math.sign(dx) * Math.min(TRACK_SPEED * dt, Math.abs(dx));
   core.x = body.x;
-  core.y = body.y - 6;
+  core.y = body.y - body.hd - 2; // track core 2 units in front of body's front face
 
   body.fireTimer -= dt;
   if (body.fireTimer <= 0) {

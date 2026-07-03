@@ -32,6 +32,9 @@ loadSettings();
 initInput();
 addEventListener('keydown', initAudio, { once: true });
 addEventListener('pointerdown', initAudio, { once: true });
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) startKlaxonLoop(false);
+});
 
 const atlas = initAtlas();
 const renderer = createRenderer(ctx, atlas);
@@ -59,7 +62,7 @@ startLoop(
           break;
         }
         game.update(dt);
-        if (game.ship.lives < 0) {
+        if (game.ship.lives <= 0) {
           mode = qualifies(game.score)
             ? { kind: 'highScoreEntry', name: '' }
             : { kind: 'gameOver', t: 3 };

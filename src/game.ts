@@ -12,6 +12,9 @@ import { play } from './audio';
 
 export const EXTRA_SHIP_AT = 10000;
 
+// Module-scope callback so no closure is allocated per frame (zero-alloc update path).
+const onEnemyShot = () => play('enemyShot');
+
 export interface Game {
   ship: Ship;
   spawner: Spawner;
@@ -87,7 +90,7 @@ export function createGame(): Game {
         }
       }
       // 5: entity AI — Task 10
-      updateEnemies(spawner.entities, ship, pools, spawner, dt, phases.tier);
+      updateEnemies(spawner.entities, ship, pools, spawner, dt, phases.tier, onEnemyShot);
       if (isDown('Space') && firePlayer(pools, ship)) play('laser'); // 6a
       updateProjectiles(pools, dt, game.cameraY); // 6b: records yPrev first
       collide(game); // 7: §5.4 priority
@@ -142,6 +145,9 @@ function collide(game: Game): void {
     for (const e of spawner.entities) {
       if (!e.live) continue;
       if (projectileHit(p, e)) {
+        // The boss body (kind==='boss') is an invulnerable pass-through shield:
+        // shots continue scanning so the core ahead of it can be targeted.
+        if (e.kind === 'boss') continue;
         p.live = false;
         if (e.kind === 'wall' || e.kind === 'barrier') break; // walls block shots
         e.hp -= 1;

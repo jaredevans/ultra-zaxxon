@@ -18,6 +18,12 @@ const FIGHTER_SPEED = 38; // convergence speed on (x, z)
 const FIGHTER_INTERVAL = 2.2;
 const PLANE_TAKEOFF_RANGE = 55;
 
+/** Module-level steer helper — avoids a per-missile closure allocation each frame. */
+function steer(cur: number, target: number, maxDelta: number): number {
+  const d = target - cur;
+  return Math.abs(d) < maxDelta ? d : Math.sign(d) * maxDelta;
+}
+
 export function updateEnemies(
   entities: readonly Entity[],
   ship: Ship,
@@ -25,6 +31,7 @@ export function updateEnemies(
   spawner: Spawner,
   dt: number,
   tier: DifficultyTier,
+  onShot?: () => void,
 ): void {
   for (const e of entities) {
     if (!e.live) continue;
@@ -42,6 +49,7 @@ export function updateEnemies(
           const len = Math.hypot(dx, dyv, dz) || 1;
           const s = (TURRET_SHOT_SPEED * tier.shotSpeedMul) / len;
           fireEnemy(pools, e, dx * s, dyv * s, dz * s);
+          onShot?.();
         }
         break;
       }
@@ -58,12 +66,8 @@ export function updateEnemies(
       }
       case 'missile': {
         // homing: steer x/z toward the player at a capped rate; destructible
-        const steer = (cur: number, target: number): number => {
-          const d = target - cur;
-          return Math.abs(d) < MISSILE_TURN * dt ? d : Math.sign(d) * MISSILE_TURN * dt;
-        };
-        e.x += steer(e.x, ship.x);
-        e.z += steer(e.z, ship.z);
+        e.x += steer(e.x, ship.x, MISSILE_TURN * dt);
+        e.z += steer(e.z, ship.z, MISSILE_TURN * dt);
         e.y += e.vy * dt;
         if (e.y < ship.y - 15) e.live = false; // overshot
         break;
@@ -71,12 +75,18 @@ export function updateEnemies(
       case 'fighter': {
         // converge on player (x, z) with lag, hold distance ahead, fire
         e.y += (e.vy !== 0 ? e.vy : -10) * dt; // drifts toward player
+        // takeoff climb from parkedPlane conversion: apply and decay vz over ~1s
+        if (e.vz > 0) {
+          e.z += e.vz * dt;
+          e.vz = Math.max(0, e.vz - 12 * dt);
+        }
         e.x += Math.sign(ship.x - e.x) * Math.min(FIGHTER_SPEED * dt, Math.abs(ship.x - e.x));
         e.z += Math.sign(ship.z - e.z) * Math.min(FIGHTER_SPEED * 0.7 * dt, Math.abs(ship.z - e.z));
         e.fireTimer -= dt;
         if (e.fireTimer <= 0 && e.y - ship.y > 15 && e.y - ship.y < 60) {
           e.fireTimer = FIGHTER_INTERVAL / tier.fireRateMul;
           fireEnemy(pools, e, 0, -TURRET_SHOT_SPEED * tier.shotSpeedMul, 0);
+          onShot?.();
         }
         if (e.y < ship.y - 20) e.live = false; // flown past
         break;

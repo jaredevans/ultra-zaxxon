@@ -79,18 +79,22 @@ export function fireEnemy(pools: Pools, from: Vec3, vx: number, vy: number, vz: 
   } // pool exhausted: drop the shot (32 is generous; never allocate)
 }
 
-export function updateProjectiles(pools: Pools, dt: number, cameraY: number): void {
-  for (const pool of [pools.player, pools.enemy]) {
-    for (const p of pool) {
-      if (!p.live) continue;
-      p.yPrev = p.y; // MUST precede advancement (swept test, spec §5.3)
-      p.x += p.vx * dt;
-      p.y += p.vy * dt;
-      p.z += p.vz * dt;
-      const range = p.owner === 'player' ? p.y - cameraY > PROJ_RANGE : false;
-      const behind = p.y < cameraY - 20;
-      const grounded = p.z < 0;
-      if (range || behind || grounded) p.live = false;
-    }
+function advancePool(pool: readonly Projectile[], dt: number, cameraY: number): void {
+  for (const p of pool) {
+    if (!p.live) continue;
+    p.yPrev = p.y; // MUST precede advancement (swept test, spec §5.3)
+    p.x += p.vx * dt;
+    p.y += p.vy * dt;
+    p.z += p.vz * dt;
+    const range = p.owner === 'player' ? p.y - cameraY > PROJ_RANGE : false;
+    const behind = p.y < cameraY - 20;
+    const grounded = p.z < 0;
+    if (range || behind || grounded) p.live = false;
   }
+}
+
+export function updateProjectiles(pools: Pools, dt: number, cameraY: number): void {
+  // Two sequential loops instead of a per-call array — zero allocation in update path.
+  advancePool(pools.player, dt, cameraY);
+  advancePool(pools.enemy, dt, cameraY);
 }

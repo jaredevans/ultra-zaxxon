@@ -30,7 +30,9 @@ const KIND_SPRITE: Partial<Record<Entity['kind'], SpriteName>> = {
   bossCore: 'bossCore',
 };
 
-// Preallocated sort scratch (no allocation in render): index + key pairs.
+// items[] is reused across frames (the array itself is not reallocated).
+// Per-frame DrawItem closures ARE allocated here — intentional:
+// the no-allocation constraint applies to update() only, not the render path.
 interface DrawItem {
   key: number;
   id: number;
