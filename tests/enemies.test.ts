@@ -77,6 +77,30 @@ describe('raider life cycle: parked → overtake → attack run → exit', () =>
   });
 });
 
+describe('fighters swarm rather than mirror', () => {
+  it('a fighter keeps patrolling around a static player instead of settling on a point', () => {
+    const spawner = createSpawner([]);
+    const pools = createPools();
+    const ship = createShip();
+    ship.x = 50;
+    ship.y = 0;
+    ship.z = 30;
+    const f = spawner.spawn('fighter', 50, 40, 30)!;
+    f.vy = -0.001; // effectively hold station in y for the test
+
+    // settle in, then measure wander over the next 4 seconds
+    for (let i = 0; i < 120; i++) updateEnemies(spawner.entities, ship, pools, spawner, DT, TIER);
+    let minX = Infinity;
+    let maxX = -Infinity;
+    for (let i = 0; i < 240; i++) {
+      updateEnemies(spawner.entities, ship, pools, spawner, DT, TIER);
+      minX = Math.min(minX, f.x);
+      maxX = Math.max(maxX, f.x);
+    }
+    expect(maxX - minX).toBeGreaterThan(14); // patrols a wide lane, not a fixed offset
+  });
+});
+
 describe('cannon lobs predictive bombs', () => {
   it('the parabolic bomb intercepts a straight-flying player', () => {
     const spawner = createSpawner([]);

@@ -92,14 +92,20 @@ export function updateEnemies(
         break;
       }
       case 'fighter': {
-        // converge on player (x, z) with lag, hold distance ahead, fire.
-        // Per-entity personality derived from id (aim offset, speed, weave)
-        // keeps wave-mates from stacking into a single blob; e.vx is
-        // repurposed as the weave phase (fighters never strafe ballistically).
-        const aimX = ship.x + (((e.id * 37) % 11) - 5);
-        const aimZ = ship.z + (((e.id * 53) % 7) - 3);
-        const speed = FIGHTER_SPEED * (0.75 + (e.id % 4) * 0.15);
+        // swarm around the player rather than mirror them: each fighter's aim
+        // point orbits the ship with per-id amplitude and rhythm, and slower
+        // convergence adds lag so player movement isn't echoed 1:1.
+        // e.vx is repurposed as the patrol phase clock.
         e.vx += dt * (1.2 + (e.id % 3) * 0.8);
+        const aimX = ship.x + (((e.id * 37) % 11) - 5) + Math.sin(e.vx) * (10 + (e.id % 3) * 5);
+        const aimZ = Math.min(
+          85,
+          Math.max(
+            6,
+            ship.z + (((e.id * 53) % 7) - 3) + Math.cos(e.vx * 0.8) * (5 + (e.id % 2) * 4),
+          ),
+        );
+        const speed = FIGHTER_SPEED * (0.55 + (e.id % 4) * 0.12);
         e.y += (e.vy !== 0 ? e.vy : -10) * dt; // drifts toward player
         // takeoff climb from parkedPlane conversion: apply and decay vz over ~1s
         if (e.vz > 0) {
@@ -107,7 +113,6 @@ export function updateEnemies(
           e.vz = Math.max(0, e.vz - 12 * dt);
         }
         e.x += Math.sign(aimX - e.x) * Math.min(speed * dt, Math.abs(aimX - e.x));
-        e.x += Math.sin(e.vx) * 8 * dt; // weave
         e.z += Math.sign(aimZ - e.z) * Math.min(speed * 0.7 * dt, Math.abs(aimZ - e.z));
         e.fireTimer -= dt;
         if (e.fireTimer <= 0 && e.y - ship.y > 15 && e.y - ship.y < 60) {
