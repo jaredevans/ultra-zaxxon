@@ -62,6 +62,14 @@ const SCENERY: readonly SpriteName[] = ['hangar', 'tower', 'silo', 'antenna', 'b
 // initialize (TDZ), throwing on first use and killing the rAF loop.
 const HOLE_PULSE = ['#16306e', '#2f5cc4', '#6b97f2', '#d7e6ff'] as const;
 
+// nebula blobs in the upper-right sky, clear of the Saturn disc at (78, 84)
+const NEBULA = [
+  { cx: 330, cy: 120, r: 62, color: 'rgba(150,80,210,0.16)' },
+  { cx: 375, cy: 165, r: 46, color: 'rgba(90,150,230,0.14)' },
+  { cx: 296, cy: 172, r: 40, color: 'rgba(230,110,180,0.10)' },
+  { cx: 344, cy: 142, r: 30, color: 'rgba(190,120,240,0.18)' },
+] as const;
+
 // items[] is reused across frames (the array itself is not reallocated).
 // Per-frame DrawItem closures ARE allocated here — intentional:
 // the no-allocation constraint applies to update() only, not the render path.
@@ -85,6 +93,23 @@ export function createRenderer(ctx: CanvasRenderingContext2D, atlas: Atlas) {
   function drawSky(cameraY: number): void {
     ctx.fillStyle = '#05050e';
     ctx.fillRect(0, 0, VIEW_W, VIEW_H);
+
+    // nebula: hash-scattered translucent pixel clumps with radial falloff,
+    // layered per blob color — deterministic, stars shine through on top
+    for (let b = 0; b < NEBULA.length; b++) {
+      const blob = NEBULA[b];
+      if (!blob) continue;
+      ctx.fillStyle = blob.color;
+      for (let i = 0; i < 44; i++) {
+        const u = ((hash(b * 131 + i * 97) % 200) / 100 - 1) * 1.0;
+        const v = ((hash(b * 57 + i * 53) % 200) / 100 - 1) * 1.0;
+        const px = blob.cx + u * Math.abs(u) * blob.r;
+        const py = blob.cy + v * Math.abs(v) * blob.r * 0.7;
+        const sz = 3 + (hash(i * 29 + b) % 4);
+        ctx.fillRect(px, py, sz, sz);
+      }
+    }
+
     // two-tier starfield with slow parallax, deterministic per index
     for (let i = 0; i < 90; i++) {
       const bright = i % 4 === 0;
@@ -93,7 +118,8 @@ export function createRenderer(ctx: CanvasRenderingContext2D, atlas: Atlas) {
       ctx.fillStyle = bright ? '#e8ecff' : '#7880a8';
       ctx.fillRect(sx, (VIEW_H - sy) % VIEW_H, bright ? 2 : 1, bright ? 2 : 1);
     }
-    // banded pixel-art planet, fixed in the far sky
+
+    // Saturn: pale-gold banded disc...
     const cx = 78;
     const cy = 84;
     const r = 26;
@@ -101,8 +127,31 @@ export function createRenderer(ctx: CanvasRenderingContext2D, atlas: Atlas) {
       const half = Math.floor(Math.sqrt(r * r - py * py));
       const band = Math.floor((py + r) / 2) % 7;
       ctx.fillStyle =
-        band < 2 ? '#6a4258' : band < 4 ? '#8a536a' : band < 5 ? '#9d6379' : '#553648';
+        band < 2 ? '#a08858' : band < 4 ? '#c4a878' : band < 5 ? '#d8c092' : '#8a744c';
       ctx.fillRect(cx - half, cy + py, half * 2, 2);
+    }
+    // ...with a ring system: two pale annulus bands split by a Cassini gap.
+    // Side segments only, tucking in at the planet's limb — classic sprite Saturn.
+    const rxOut = r * 2.15;
+    const ryOut = r * 0.52;
+    const rxIn = r * 1.35;
+    const ryIn = ryOut * (rxIn / rxOut);
+    for (let py = -Math.floor(ryOut); py <= ryOut; py += 2) {
+      const t = py / ryOut;
+      const wo = Math.floor(rxOut * Math.sqrt(1 - t * t));
+      const ti = py / ryIn;
+      const planetHalf = Math.floor(Math.sqrt(Math.max(0, r * r - py * py)));
+      const wi = Math.abs(ti) < 1 ? Math.floor(rxIn * Math.sqrt(1 - ti * ti)) : planetHalf + 1;
+      const wm = wi + Math.floor((wo - wi) * 0.45);
+      for (const [a, b2, col] of [
+        [wi, wm - 2, '#8d7a5c'],
+        [wm, wo, '#c9b189'],
+      ] as const) {
+        if (b2 <= a) continue;
+        ctx.fillStyle = col;
+        ctx.fillRect(cx - b2, cy + py, b2 - a, 2); // left segment
+        ctx.fillRect(cx + a, cy + py, b2 - a, 2); // right segment
+      }
     }
   }
 
