@@ -130,14 +130,16 @@ export function createRenderer(ctx: CanvasRenderingContext2D, atlas: Atlas) {
         ctx.fillRect(px, py, sz, sz);
       }
 
-      // arms: dense, thick near the hub, tapering and fading outward
+      // arms: dense, thick near the hub, tapering and fading outward.
+      // ~1.15 turns each with sub-linear radius growth — pronounced curvature
+      // with the inner windings wrapping visibly around the hub
       for (let arm = 0; arm < 2; arm++) {
-        for (let i = 0; i < 170; i++) {
-          const t = i / 170; // 0 core → 1 rim
-          const ang = arm * Math.PI + t * 4.2; // ~0.67 turn per arm
-          const rad = 6 + t * (gr - 6);
+        for (let i = 0; i < 230; i++) {
+          const t = i / 230; // 0 core → 1 rim
+          const ang = arm * Math.PI + t * 7.2;
+          const rad = 6 + Math.pow(t, 0.88) * (gr - 6);
           const { px, py } = disk(ang, rad);
-          const spread = 4 + (1 - t) * 13; // arm width tapers outward
+          const spread = 3 + (1 - t) * 10; // arm width tapers outward
           ctx.fillStyle = GALAXY_ARM[Math.min(5, Math.floor(t * 6))] ?? GALAXY_ARM[5];
           for (let s = 0; s < 2; s++) {
             const jx = ((hash(arm * 131 + i * 97 + s * 17) % 100) / 50 - 1) * spread;
