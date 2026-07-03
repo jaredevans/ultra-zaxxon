@@ -132,11 +132,12 @@ export function createRenderer(ctx: CanvasRenderingContext2D, atlas: Atlas) {
 
       // arms: dense, thick near the hub, tapering and fading outward.
       // ~1.15 turns each with sub-linear radius growth — pronounced curvature
-      // with the inner windings wrapping visibly around the hub
-      for (let arm = 0; arm < 2; arm++) {
+      // with the inner windings wrapping visibly around the hub.
+      // Four arms: the main pair plus a second pair curving between them.
+      for (let arm = 0; arm < 4; arm++) {
         for (let i = 0; i < 230; i++) {
           const t = i / 230; // 0 core → 1 rim
-          const ang = arm * Math.PI + t * 7.2;
+          const ang = arm * (Math.PI / 2) + t * 7.2;
           const rad = 6 + Math.pow(t, 0.88) * (gr - 6);
           const { px, py } = disk(ang, rad);
           const spread = 3 + (1 - t) * 10; // arm width tapers outward
