@@ -1,6 +1,6 @@
-# Zaxxon Clone
+# Ultra Zaxxon
 
-A browser-based isometric scrolling shooter inspired by the arcade classic Zaxxon. Built with TypeScript and Vite — no runtime dependencies.
+A browser-based isometric scrolling shooter inspired by the arcade classic Zaxxon — and escalated well past it: lightning pits, ambush raiders, predictive artillery, and a boss with an escort wing. Built with TypeScript and Vite — no runtime dependencies.
 
 ## Install & Run
 
