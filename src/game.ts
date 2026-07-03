@@ -1,7 +1,13 @@
 import type { Entity, Ship } from './entities/types';
 import { createShip, updateShip, killShip, updateFuel, SCROLL_SPEED } from './entities/ship';
 import { createPools, firePlayer, updateProjectiles, type Pools } from './entities/projectiles';
-import { createImpacts, spawnImpact, updateImpacts, type Impact } from './entities/effects';
+import {
+  createImpacts,
+  spawnImpact,
+  spawnBolt,
+  updateImpacts,
+  type Impact,
+} from './entities/effects';
 import { updateEnemies } from './entities/enemies';
 import { createSpawner, type Spawner } from './world/spawner';
 import { createPhases, PHASE3_END, BOSS_Y } from './world/phases';
@@ -134,6 +140,17 @@ function collide(game: Game): void {
   if (shipAlive) {
     for (const e of spawner.entities) {
       if (!e.live) continue;
+      if (e.kind === 'zapHole') {
+        // overhead trigger: footprint overlap in x/y only — altitude is no escape
+        if (Math.abs(ship.x - e.x) < ship.hw + e.hw && Math.abs(ship.y - e.y) < ship.hd + e.hd) {
+          spawnBolt(game.impacts, e.x, e.y, ship.z);
+          killShip(ship);
+          play('zap');
+          play('explosion');
+          break;
+        }
+        continue;
+      }
       if (overlap(ship, e)) {
         if (e.kind !== 'wall' && e.kind !== 'barrier') {
           e.live = false; // both die (spec §5.4-2)
@@ -166,7 +183,8 @@ function collide(game: Game): void {
       if (projectileHit(p, e)) {
         // The boss body (kind==='boss') is an invulnerable pass-through shield:
         // shots continue scanning so the core ahead of it can be targeted.
-        if (e.kind === 'boss') continue;
+        // Zap holes are holes — nothing to destroy; shots pass over.
+        if (e.kind === 'boss' || e.kind === 'zapHole') continue;
         p.live = false;
         if (e.kind === 'wall' || e.kind === 'barrier') {
           // walls block shots — burst on the wall's near face

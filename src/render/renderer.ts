@@ -18,6 +18,7 @@ export interface RenderWorld {
   hasFloor: boolean;
   floorGaps: readonly { yStart: number; yEnd: number }[];
   impacts: readonly Impact[];
+  time: number; // accumulated play time — drives pulsing effects
 }
 
 const KIND_SPRITE: Partial<Record<Entity['kind'], SpriteName>> = {
@@ -253,6 +254,12 @@ export function createRenderer(ctx: CanvasRenderingContext2D, atlas: Atlas) {
               draw: () => drawWall(e, w.cameraY, x0, x1),
             });
           }
+        } else if (e.kind === 'zapHole') {
+          items.push({
+            key: depthKey(e),
+            id: e.id,
+            draw: () => drawZapHole(e, w.cameraY, w.time),
+          });
         } else {
           const sprite = KIND_SPRITE[e.kind];
           if (!sprite) continue;
@@ -331,7 +338,9 @@ export function createRenderer(ctx: CanvasRenderingContext2D, atlas: Atlas) {
           draw: () => {
             const s = project(im, w.cameraY);
             const age = 1 - im.t / im.dur; // 0 fresh → 1 expired
-            if (im.scale >= 2) {
+            if (im.kind === 'bolt') {
+              drawBolt(im, w.cameraY, age);
+            } else if (im.scale >= 2) {
               // multi-burst fireball, same treatment as the ship's death
               const frame = Math.min(3, Math.floor(age * 4));
               atlas.draw(ctx, 'explosion', frame, s.sx, s.sy, im.scale);
@@ -417,6 +426,62 @@ export function createRenderer(ctx: CanvasRenderingContext2D, atlas: Atlas) {
     tri(nose, rtip, tail, ship.bank > 0 ? '#7c7c92' : '#c8c8dc');
     tri(tail, fin, spine, '#4a5ae0');
     tri(pt(SHIP_MODEL.canL), pt(SHIP_MODEL.canR), pt(SHIP_MODEL.canF), '#70c8ff');
+  }
+
+  /** Pulsing blue/white Tesla pit: dark pixel-ellipse mouth, glowing rim, breathing core. */
+  function drawZapHole(e: Entity, cameraY: number, time: number): void {
+    p.x = e.x;
+    p.y = e.y;
+    p.z = 0;
+    const s = project(p, cameraY);
+    const pulse = 0.5 + 0.5 * Math.sin(time * 5 + e.id * 1.7); // 0..1, per-hole phase
+    // pit mouth (pixel-art ellipse rows)
+    ctx.fillStyle = '#04060c';
+    for (let py = -6; py <= 6; py += 2) {
+      const half = Math.floor(14 * Math.sqrt(1 - (py / 7) * (py / 7)));
+      ctx.fillRect(s.sx - half, s.sy + py, half * 2, 2);
+    }
+    // pulsing rim
+    ctx.fillStyle = pulse > 0.55 ? '#e8f4ff' : '#3a6cf0';
+    ctx.fillRect(s.sx - 14, s.sy - 1, 4, 2);
+    ctx.fillRect(s.sx + 10, s.sy - 1, 4, 2);
+    ctx.fillRect(s.sx - 6, s.sy - 7, 12, 2);
+    ctx.fillRect(s.sx - 6, s.sy + 5, 12, 2);
+    // breathing core
+    const core = 2 + Math.round(pulse * 4);
+    ctx.fillStyle = pulse > 0.55 ? '#ffffff' : '#6a9cff';
+    ctx.fillRect(s.sx - core / 2, s.sy - core / 2, core, core);
+  }
+
+  /** Jagged lightning column from the floor at (x, y) up to z = im.z. */
+  function drawBolt(im: Impact, cameraY: number, age: number): void {
+    p.x = im.x;
+    p.y = im.y;
+    p.z = 0;
+    const base = project(p, cameraY);
+    const top = base.sy - im.z * Z_SCALE;
+    const segs = 6;
+    const jag = age < 0.5 ? 5 : 3;
+    for (const [width, color] of [
+      [5, '#3a6cf0'],
+      [2, '#ffffff'],
+    ] as const) {
+      ctx.strokeStyle = color;
+      ctx.lineWidth = width;
+      ctx.beginPath();
+      ctx.moveTo(base.sx, base.sy);
+      for (let i = 1; i <= segs; i++) {
+        const yy = base.sy + (top - base.sy) * (i / segs);
+        const xoff = i === segs ? 0 : Math.sin(im.t * 60 + i * 2.4) * jag;
+        ctx.lineTo(base.sx + xoff, yy);
+      }
+      ctx.stroke();
+    }
+    // ground flash at the pit mouth
+    if (age < 0.4) {
+      ctx.fillStyle = '#e8f4ff';
+      ctx.fillRect(base.sx - 8, base.sy - 2, 16, 4);
+    }
   }
 
   /** Draws one 10-unit column slice [x0, x1] of a wall/barrier (see slicing note at the call site). */

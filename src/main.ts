@@ -117,6 +117,7 @@ startLoop(
         hasFloor: game.hasFloor,
         floorGaps: game.floorGaps,
         impacts: game.impacts,
+        time: game.time,
       },
       alpha,
     );

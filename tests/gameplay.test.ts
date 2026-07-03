@@ -89,6 +89,36 @@ describe('shots burst on walls', () => {
   });
 });
 
+describe('zap holes strike ships overhead at any altitude', () => {
+  it('flying over a hole at high altitude triggers the bolt and destroys the ship', async () => {
+    const { createGame } = await import('../src/game');
+    const game = createGame();
+    // level1 zapHole: y=380, x=65
+    game.ship.y = 378;
+    game.ship.x = 65;
+    game.ship.z = 85; // altitude is no escape
+
+    for (let i = 0; i < 6; i++) game.update(DT); // scroll into the hole's footprint
+
+    expect(game.ship.state.kind).toBe('exploding');
+    const bolt = game.impacts.find((i) => i.live && i.kind === 'bolt');
+    expect(bolt).toBeDefined();
+    expect(bolt!.x).toBeCloseTo(65, 0);
+  });
+
+  it('passing beside the hole is safe', async () => {
+    const { createGame } = await import('../src/game');
+    const game = createGame();
+    game.ship.y = 378;
+    game.ship.x = 40; // well clear laterally
+    game.ship.z = 85;
+
+    for (let i = 0; i < 6; i++) game.update(DT);
+
+    expect(game.ship.state.kind).toBe('alive');
+  });
+});
+
 describe('destroyed enemies explode', () => {
   it('killing a drum spawns a scaled boom at its position', async () => {
     const { createGame } = await import('../src/game');

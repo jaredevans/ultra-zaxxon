@@ -8,7 +8,8 @@ export type SfxName =
   | 'klaxon'
   | 'bossHit'
   | 'extraLife'
-  | 'wallHit';
+  | 'wallHit'
+  | 'zap';
 
 let ctx: AudioContext | null = null;
 const buffers = new Map<SfxName, AudioBuffer>();
@@ -52,6 +53,13 @@ const RECIPES: Record<SfxName, Recipe> = {
   wallHit: {
     dur: 0.09, // short metallic thunk
     gen: (t, d) => (noise() * 0.6 + Math.sin(2 * Math.PI * 480 * t) * 0.4) * env(t, d) ** 2 * 0.6,
+  },
+  zap: {
+    dur: 0.3, // electric crackle: falling shriek over noise
+    gen: (t, d) =>
+      (noise() * 0.7 + Math.sin(2 * Math.PI * (1400 - 2600 * t) * t) * 0.5) *
+      env(t, d) ** 1.5 *
+      0.7,
   },
 };
 

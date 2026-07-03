@@ -24,6 +24,9 @@ const DEFS: Record<string, KindDef> = {
   parkedPlane: { hw: 4, hd: 4, hh: 5, hp: 1, points: 100 },
   fighter: { hw: 3.5, hd: 3, hh: 1.5, hp: 1, points: 200 },
   missile: { hw: 1, hd: 2, hh: 1, hp: 1, points: 150 },
+  // trigger footprint only — the overhead bolt check in game.ts ignores z,
+  // and the flat profile keeps it out of reach of shots (holes can't be destroyed)
+  zapHole: { hw: 3.5, hd: 3.5, hh: 0.3, hp: Infinity, points: 0 },
 };
 
 export interface Spawner {

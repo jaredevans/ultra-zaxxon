@@ -36,7 +36,8 @@ export type EntityKind =
   | 'fighter'
   | 'missile'
   | 'boss'
-  | 'bossCore'; // Zaxxon weak point (small AABB)
+  | 'bossCore' // Zaxxon weak point (small AABB)
+  | 'zapHole'; // pulsing floor pit; bolts any ship overhead regardless of altitude
 
 export interface Entity extends AABB {
   id: number;

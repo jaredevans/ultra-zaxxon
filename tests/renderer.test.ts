@@ -45,8 +45,20 @@ describe('renderer draws live impact bursts', () => {
       enemyShots: [],
       cameraY: 0,
       hasFloor: false,
+      time: 0,
       floorGaps: [],
-      impacts: [{ x: 50, y: 40, z: 10, t: IMPACT_TIME, dur: IMPACT_TIME, scale: 1, live: true }],
+      impacts: [
+        {
+          kind: 'burst' as const,
+          x: 50,
+          y: 40,
+          z: 10,
+          t: IMPACT_TIME,
+          dur: IMPACT_TIME,
+          scale: 1,
+          live: true,
+        },
+      ],
     };
     renderer.render(world, 0);
     expect(calls.some(([name]) => name === 'explosion')).toBe(true);
@@ -90,8 +102,20 @@ describe('renderer draws live impact bursts', () => {
       enemyShots: [],
       cameraY: 0,
       hasFloor: false,
+      time: 0,
       floorGaps: [],
-      impacts: [{ x: 10, y: 38, z: 10, t: IMPACT_TIME, dur: IMPACT_TIME, scale: 1, live: true }],
+      impacts: [
+        {
+          kind: 'burst' as const,
+          x: 10,
+          y: 38,
+          z: 10,
+          t: IMPACT_TIME,
+          dur: IMPACT_TIME,
+          scale: 1,
+          live: true,
+        },
+      ],
     };
     renderer.render(world, 0);
     const firstWallFill = log.indexOf('fill:#5a5a72');
@@ -118,6 +142,7 @@ describe('renderer draws live impact bursts', () => {
       enemyShots: [],
       cameraY: 0,
       hasFloor: false,
+      time: 0,
       floorGaps: [],
       impacts: [],
     };
@@ -140,6 +165,7 @@ describe('renderer draws live impact bursts', () => {
       enemyShots: [],
       cameraY: 0,
       hasFloor: false,
+      time: 0,
       floorGaps: [],
       impacts: [],
     };
@@ -165,8 +191,20 @@ describe('renderer draws live impact bursts', () => {
       enemyShots: [],
       cameraY: 0,
       hasFloor: false,
+      time: 0,
       floorGaps: [],
-      impacts: [{ x: 50, y: 40, z: 10, t: 0, dur: IMPACT_TIME, scale: 1, live: false }],
+      impacts: [
+        {
+          kind: 'burst' as const,
+          x: 50,
+          y: 40,
+          z: 10,
+          t: 0,
+          dur: IMPACT_TIME,
+          scale: 1,
+          live: false,
+        },
+      ],
     };
     renderer.render(world, 0);
     expect(calls.some(([name]) => name === 'explosion')).toBe(false);
