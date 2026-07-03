@@ -29,6 +29,7 @@ Open `http://localhost:5173` in a browser. The game boots immediately.
 
 - **Walls:** climb above the stripes or thread the slots — touching them is death.
 - **Ground targets** (fuel drums, turrets, radars, launchers): dive low (altimeter ≲ 10) and strafe them. They're solid — destroy them or fly over, not through.
+- **Zap holes** (pulsing blue/white pits): the one hazard altitude can't beat — fly over one at any height and it bolts you out of the sky. Can't be shot; dodge sideways.
 - **Fuel:** you drain constantly; shooting a drum restores 20. At zero you sink to the floor.
 - **Fighters** (open-space phase): they converge to your altitude — hold steady and they fly into your fire.
 - **Boss:** match the extra altimeter tick that appears during the fight, line up with the glowing core on its front, and land 6 hits before it finishes 5 missile volleys.
