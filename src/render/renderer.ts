@@ -513,6 +513,46 @@ export function createRenderer(ctx: CanvasRenderingContext2D, atlas: Atlas) {
           ctx.fillRect(a.sx + ex + 1, a.sy - 1, 3, 2);
         }
       }
+
+      // decorative apron strip right of the corridor — mirror of the left side
+      for (let wx = 100; wx < 120; wx += 10) {
+        p.x = wx;
+        p.y = wy;
+        p.z = 0;
+        const a = project(p, cameraY);
+        ctx.fillStyle = ((wx + wy) / 10) % 2 === 0 ? '#101c28' : '#0d1822';
+        ctx.beginPath();
+        ctx.moveTo(a.sx, a.sy);
+        ctx.lineTo(a.sx + ex, a.sy + ey);
+        ctx.lineTo(a.sx + ex + ex, a.sy);
+        ctx.lineTo(a.sx + ex, a.sy - ey);
+        ctx.closePath();
+        ctx.fill();
+      }
+
+      // right-hand cliff face at the x=120 rim — the platform floats in space
+      // from both sides (same construction as the left rim at x=-20)
+      p.y = wy;
+      p.z = 0;
+      p.x = 120;
+      const er = project(p, cameraY);
+      ctx.fillStyle = '#1c1c2a';
+      ctx.fillRect(er.sx - 1, er.sy, 3, 30); // right edge pillar
+      ctx.beginPath();
+      ctx.moveTo(er.sx, er.sy);
+      ctx.lineTo(er.sx + ex, er.sy - ey); // along +y edge
+      ctx.lineTo(er.sx + ex, er.sy - ey + 28);
+      ctx.lineTo(er.sx, er.sy + 28);
+      ctx.closePath();
+      ctx.fill();
+      ctx.fillStyle = '#4a4a62'; // lit rim
+      ctx.beginPath();
+      ctx.moveTo(er.sx, er.sy);
+      ctx.lineTo(er.sx + ex, er.sy - ey);
+      ctx.lineTo(er.sx + ex, er.sy - ey + 3);
+      ctx.lineTo(er.sx, er.sy + 3);
+      ctx.closePath();
+      ctx.fill();
     }
   }
 

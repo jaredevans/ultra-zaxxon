@@ -298,3 +298,26 @@ describe('renderer draws live impact bursts', () => {
     expect(calls.some(([name]) => name === 'explosion')).toBe(false);
   });
 });
+
+describe('floating platform reads from both sides', () => {
+  it('cliff faces draw on the left AND right rims (two path fills per row each)', () => {
+    const log: string[] = [];
+    const renderer = createRenderer(stubCtx(log), recordingAtlas([]));
+    const world: RenderWorld = {
+      ship: createShip(),
+      entities: [],
+      playerShots: [],
+      enemyShots: [],
+      cameraY: 0,
+      hasFloor: true,
+      time: 0,
+      floorGaps: [],
+      impacts: [],
+    };
+    renderer.render(world, 0);
+    // drawFloor paints rows wy = -20..90 (12 rows). Each row's cliff face is a
+    // '#1c1c2a' path fill; left-only would give 12 — both rims give 24.
+    const cliffFills = log.filter((l) => l === 'fill:#1c1c2a').length;
+    expect(cliffFills).toBeGreaterThanOrEqual(24);
+  });
+});
