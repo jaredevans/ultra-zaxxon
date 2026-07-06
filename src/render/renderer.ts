@@ -250,7 +250,17 @@ const SHIP_MODEL = {
 const MAX_PITCH = 0.5; // radians of visible attack angle at full climb/dive
 const MAX_ROLL = 0.55;
 
-const SCENERY: readonly SpriteName[] = ['hangar', 'tower', 'silo', 'antenna', 'bunker'];
+// hash-picked scenery clusters for the aprons; composition varies along the run
+const SCENERY_CLUSTERS: readonly (readonly SpriteName[])[] = [
+  ['hangar', 'silo'],
+  ['tower', 'antenna'],
+  ['bunker'],
+  ['building'],
+  ['silo', 'silo'],
+  ['building', 'antenna'],
+  ['hangar'],
+  ['tower', 'bunker'],
+];
 
 // NOTE: consts used by the hoisted draw functions below MUST live at module
 // scope — inside createRenderer they'd sit after its `return` and never
@@ -561,27 +571,38 @@ export function createRenderer(ctx: CanvasRenderingContext2D, atlas: Atlas) {
       items.length = 0;
       drawFloor(w.cameraY, w.hasFloor, w.floorGaps);
 
-      // decorative base scenery on the left apron (no collision) —
-      // deterministic per world row, depth-sorted with everything else
+      // decorative scenery clusters on BOTH aprons (no collision) —
+      // deterministic per world row+side, depth-sorted with everything else
       if (w.hasFloor) {
-        const s0 = Math.floor((w.cameraY - 20) / 60) * 60;
-        for (let sy = s0; sy < w.cameraY + 100; sy += 60) {
-          const h = hash(sy);
-          const kind = SCENERY[h % SCENERY.length];
-          if (!kind) continue;
-          const sxw = -15 - (h % 5);
-          const syw = sy + (h % 37);
-          items.push({
-            key: depthKey({ x: sxw, y: syw, z: 0 }),
-            id: -1000 - sy,
-            draw: () => {
-              p.x = sxw;
-              p.y = syw;
-              p.z = 0;
-              const s = project(p, w.cameraY);
-              atlas.draw(ctx, kind, 0, s.sx, s.sy - atlas.size(kind).h / 2 + 3);
-            },
-          });
+        const s0 = Math.floor((w.cameraY - 20) / 30) * 30;
+        for (let sy = s0; sy < w.cameraY + 100; sy += 30) {
+          for (let side = 0; side < 2; side++) {
+            const h = hash(sy * 31 + side * 7);
+            const cluster = SCENERY_CLUSTERS[h % SCENERY_CLUSTERS.length];
+            if (!cluster) continue;
+            const sxw = side === 0 ? -16 + (h % 4) : 105 + (h % 4);
+            const syw = sy + (h % 17);
+            items.push({
+              key: depthKey({ x: sxw, y: syw, z: 0 }),
+              id: -1000 - sy * 2 - side,
+              draw: () => {
+                p.x = sxw;
+                p.y = syw;
+                p.z = 0;
+                const s = project(p, w.cameraY);
+                if (h % 3 === 0) atlas.draw(ctx, 'pad', 0, s.sx, s.sy); // tarmac under the cluster
+                for (let ci = 0; ci < cluster.length; ci++) {
+                  const kind = cluster[ci];
+                  if (!kind) continue;
+                  p.x = sxw;
+                  p.y = syw + ci * 9;
+                  p.z = 0;
+                  const cs = project(p, w.cameraY);
+                  atlas.draw(ctx, kind, 0, cs.sx, cs.sy - atlas.size(kind).h / 2 + 3);
+                }
+              },
+            });
+          }
         }
       }
 

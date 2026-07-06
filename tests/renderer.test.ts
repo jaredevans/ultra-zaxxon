@@ -321,3 +321,42 @@ describe('floating platform reads from both sides', () => {
     expect(cliffFills).toBeGreaterThanOrEqual(24);
   });
 });
+
+describe('clustered apron scenery', () => {
+  const SCENERY_SET = new Set<SpriteName>([
+    'hangar',
+    'tower',
+    'silo',
+    'antenna',
+    'bunker',
+    'building',
+    'pad',
+  ]);
+  const world = (hasFloor: boolean): RenderWorld => ({
+    ship: createShip(),
+    entities: [],
+    playerShots: [],
+    enemyShots: [],
+    cameraY: 0,
+    hasFloor,
+    time: 0,
+    floorGaps: [],
+    impacts: [],
+  });
+
+  it('clusters populate both aprons: at least 8 scenery draws in one frame', () => {
+    const calls: [SpriteName, number][] = [];
+    const renderer = createRenderer(stubCtx(), recordingAtlas(calls));
+    renderer.render(world(true), 0);
+    const scenery = calls.filter(([name]) => SCENERY_SET.has(name));
+    // 5 row-slots (wy -30..90, step 30) × 2 sides, each cluster ≥ 1 sprite
+    expect(scenery.length).toBeGreaterThanOrEqual(8);
+  });
+
+  it('no scenery over open space', () => {
+    const calls: [SpriteName, number][] = [];
+    const renderer = createRenderer(stubCtx(), recordingAtlas(calls));
+    renderer.render(world(false), 0);
+    expect(calls.some(([name]) => SCENERY_SET.has(name))).toBe(false);
+  });
+});

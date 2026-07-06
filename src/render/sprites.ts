@@ -7,6 +7,8 @@ export type SpriteName =
   | 'silo'
   | 'antenna'
   | 'bunker'
+  | 'building'
+  | 'pad'
   | 'turret'
   | 'radar'
   | 'fuelDrum'
@@ -124,6 +126,26 @@ const GRIDS: Record<string, string[][]> = {
     'MNNNNNNNNNNNNM',
     'MMMMMMMMMMMMMM',
     'YKYKYKYKYKYKYK',
+  ]],
+  building: [[
+    '..MMMMMMMMMMMMMMMMMMMM..',
+    '.MLLLLLLLLLLLLLLLLLLLLM.',
+    'MNNNNNNNNNNNNNNNNNNNNNNM',
+    'MNKKNNKKNNKKNNKKNNKKNNKKNM',
+    'MNKKNNKKNNKKNNKKNNKKNNKKNM',
+    'MNNNNNNNNNNNNNNNNNNNNNNM',
+    'MNKKNNKKNNKKNNKKNNKKNNKKNM',
+    'MNKKNNKKNNKKNNKKNNKKNNKKNM',
+    'MNNNNNNNNNNNNNNNNNNNNNNM',
+    'KKKKKKKKKKKKKKKKKKKKKKKKKK',
+  ]],
+  pad: [[
+    'NNNNNNNNNNNNNNNNNNNN',
+    'NLNNNNNNNNNNNNNNNNLN',
+    'NNNNNYYNNNNNNYYNNNNN',
+    'NNNNNYYNNNNNNYYNNNNN',
+    'NLNNNNNNNNNNNNNNNNLN',
+    'NNNNNNNNNNNNNNNNNNNN',
   ]],
   turret: [[
     '....RR....',
