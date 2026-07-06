@@ -7,14 +7,11 @@
   ],
   "segments": [
     {
-      "type": "fuelDrum",
-      "y": 120,
-      "x": 40
-    },
-    {
-      "type": "fuelDrum",
-      "y": 140,
-      "x": 60
+      "type": "wall",
+      "y": 170,
+      "xStart": 0,
+      "xEnd": 100,
+      "height": 25
     },
     {
       "type": "wall",
@@ -22,6 +19,16 @@
       "xStart": 0,
       "xEnd": 100,
       "height": 20
+    },
+    {
+      "type": "fuelDrum",
+      "y": 250,
+      "x": 40
+    },
+    {
+      "type": "fuelDrum",
+      "y": 270,
+      "x": 75
     },
     {
       "type": "radar",
