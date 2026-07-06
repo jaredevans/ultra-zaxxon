@@ -2,6 +2,7 @@ import type { DifficultyTier } from '../entities/enemies';
 import type { Game } from '../game';
 import { spawnBoss, updateBoss, type BossRefs } from '../entities/boss';
 
+export const APPROACH_END = 150; // open-space fly-in before the perimeter wall (~5s at base scroll)
 export const PHASE1_END = 2000;
 export const PHASE2_END = 2800;
 export const PHASE3_END = 3600;
@@ -13,7 +14,7 @@ export interface FullTier extends DifficultyTier {
   slotShrink: number;
 }
 
-type PhaseName = 'fortress1' | 'space' | 'fortress2' | 'boss';
+type PhaseName = 'approach' | 'fortress1' | 'space' | 'fortress2' | 'boss';
 
 export interface Phases {
   update(game: Game, dt: number): void;
@@ -45,30 +46,33 @@ export function createPhases(): Phases {
   let bonusPaid: PhaseName | null = null;
 
   const phases: Phases = {
-    hasFloor: true,
+    hasFloor: false,
     fuelFrozen: false,
     scrollPaused: false,
     loopN: 0,
     tier: tierFor(0),
-    name: 'fortress1',
+    name: 'approach',
 
     update(game: Game, dt: number): void {
       const localY = game.cameraY - phases.loopN * PHASE3_END;
       const prev = phases.name;
       phases.name =
-        localY < PHASE1_END
-          ? 'fortress1'
-          : localY < PHASE2_END
-            ? 'space'
-            : localY < BOSS_Y - 45 // far enough for dodge time, still inside the visible window
-              ? 'fortress2'
-              : 'boss';
+        localY < APPROACH_END
+          ? 'approach'
+          : localY < PHASE1_END
+            ? 'fortress1'
+            : localY < PHASE2_END
+              ? 'space'
+              : localY < BOSS_Y - 45 // far enough for dodge time, still inside the visible window
+                ? 'fortress2'
+                : 'boss';
 
-      phases.hasFloor = phases.name !== 'space';
+      phases.hasFloor = phases.name !== 'space' && phases.name !== 'approach';
       phases.fuelFrozen = phases.name === 'boss';
 
-      // end-of-phase fuel bonus (fuel × 10), once per transition
-      if (prev !== phases.name && bonusPaid !== phases.name) {
+      // end-of-phase fuel bonus (fuel × 10), once per transition. Leaving the
+      // approach pays nothing — it is a fly-in, not a completed phase.
+      if (prev !== phases.name && prev !== 'approach' && bonusPaid !== phases.name) {
         game.score += Math.round(game.ship.fuel * 10);
         bonusPaid = phases.name;
       }
@@ -118,7 +122,7 @@ export function createPhases(): Phases {
             phases.loopN += 1;
             phases.tier = tierFor(phases.loopN);
             phases.scrollPaused = false;
-            phases.name = 'fortress1';
+            phases.name = 'approach';
             bossRefs = null;
             waveIdx = 0;
             bonusPaid = null;
@@ -127,6 +131,9 @@ export function createPhases(): Phases {
           }
         }
       }
+
+      // sync game.hasFloor to current phase state (game.ts syncs before this update, so we sync after)
+      game.hasFloor = phases.hasFloor;
     },
   };
   return phases;
