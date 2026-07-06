@@ -57,7 +57,7 @@ export function createGame(): Game {
     cameraY: 0,
     score: 0,
     bonusAwarded: false,
-    hasFloor: true,
+    hasFloor: false,
     floorGaps: level1.floorGaps,
     wallHeights: [],
     impacts: createImpacts(),
@@ -100,7 +100,6 @@ export function createGame(): Game {
         play('explosion');
       }
       game.cameraY = ship.y;
-      game.hasFloor = phases.hasFloor; // space phase hides floor and shadow
       spawner.update(game.cameraY); // 4: spawn/despawn window
       // rebuild wallHeights without allocation; the boss core's altitude also
       // gets a tick — the altimeter doubles as the aiming aid for the weak point
@@ -136,6 +135,7 @@ export function createGame(): Game {
       }
       // 8: phase transitions
       phases.update(game, dt);
+      game.hasFloor = phases.hasFloor; // space phase hides floor and shadow
       // 9: shadow is a pure lookup at render time
     },
   };

@@ -131,9 +131,6 @@ export function createPhases(): Phases {
           }
         }
       }
-
-      // sync game.hasFloor to current phase state (game.ts syncs before this update, so we sync after)
-      game.hasFloor = phases.hasFloor;
     },
   };
   return phases;
