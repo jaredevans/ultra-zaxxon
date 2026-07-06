@@ -30,6 +30,8 @@ Open `http://localhost:5173` in a browser. The game boots immediately.
 **Altitude is the game.** The gap between your ship and its shadow is your height; the altimeter on the right shows it as a number, with ticks marking the height of every wall currently in play.
 
 - **Walls:** climb above the stripes or thread the slots — touching them is death.
+- **The approach:** each run (and each loop) opens flying over open space — no floor,
+  no shadow. The fortress perimeter wall scrolls in fast; climb over it to enter.
 - **Ground targets** (fuel drums, turrets, radars, launchers): dive low (altimeter ≲ 10) and strafe them. They're solid — destroy them or fly over, not through.
 - **Zap holes** (pulsing blue/white pits): the one hazard altitude can't beat — fly over one at any height and it bolts you out of the sky. Can't be shot; dodge sideways.
 - **Fuel:** you drain constantly; shooting a drum restores 20. At zero you sink to the floor.
@@ -40,7 +42,7 @@ You get 3 ships; a bonus ship arrives at 10,000 points. Surviving the boss (or k
 
 ## Features
 
-- Three phases per loop: Fortress 1 → Space → Fortress 2 → Boss fight
+- Each loop: Approach → Fortress 1 → Space → Fortress 2 → Boss fight
 - Fuel system with HUD altimeter and forced-descent on empty
 - Enemy types: turrets, radar dishes, missile launchers, parked planes, fighters, boss
 - 10-entry high-score table persisted via `localStorage`
