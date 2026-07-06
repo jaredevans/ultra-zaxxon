@@ -36,18 +36,25 @@ Add an `approach` phase name to `phases.ts`:
   therefore opens by flying out of the previous fortress over space toward the next
   perimeter wall. No extra loop code.
 - Fuel drains normally during approach (it drains during the space phase too; only the
-  boss freezes fuel). The end-of-phase fuel bonus fires on the `approach → fortress1`
-  transition exactly as it does for other transitions — no special case.
+  boss freezes fuel). The end-of-phase fuel bonus does **not** fire on
+  `approach → fortress1` — the approach is not a completed combat phase, and paying it
+  would hand every game ~1000 free points five seconds in. Implementation: skip the
+  payout when `prev === 'approach'`, and initialize `phases.name` to `'approach'` so the
+  very first frame does not register a phantom `fortress1 → approach` transition. The
+  boss-end block sets `name = 'approach'` (was `'fortress1'`), preserving today's
+  zero-payout at loop rollover.
 
 ### Level data (`level1.json`)
 
-Three full-span, slot-free perimeter walls:
+Survey of the existing data found that two of the three perimeter walls already exist:
+`level1.json` has full-span walls at y=1960 (height 30 — the fortress 1 exit) and y=2880
+(height 25 — the fortress 2 entry). Only one wall is new:
 
-| Wall | y | height | Role |
-|---|---|---|---|
-| Entry, fortress 1 | 170 | 25 | The iconic opening climb-over |
-| Exit, fortress 1 | 1980 | 25 | Fly out over the wall as the floor drops into space |
-| Entry, fortress 2 | 2820 | 25 | Climb back in for the boss fortress |
+| Wall | y | height | Role | Status |
+|---|---|---|---|---|
+| Entry, fortress 1 | 170 | 25 | The iconic opening climb-over | **new** |
+| Exit, fortress 1 | 1960 | 30 | Fly out over the wall as the floor drops into space | already present |
+| Entry, fortress 2 | 2880 | 25 | Climb back in for the boss fortress | already present |
 
 Height 25 clears comfortably from spawn `z = 50` but kills a player who dives early.
 They get altimeter ticks and leading-face stripes for free via the existing
