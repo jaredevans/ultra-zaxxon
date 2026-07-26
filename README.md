@@ -36,7 +36,11 @@ Open `http://localhost:5173` in a browser. The game boots immediately.
 - **Zap holes** (pulsing blue/white pits): the one hazard altitude can't beat — fly over one at any height and it bolts you out of the sky. Can't be shot; dodge sideways.
 - **Fuel:** you drain constantly; shooting a drum restores 20. At zero you sink to the floor.
 - **Fighters** (open-space phase): they converge to your altitude — hold steady and they fly into your fire.
-- **Boss:** match the extra altimeter tick that appears during the fight, line up with the glowing core on its front, and land 6 hits before it finishes 5 missile volleys.
+- **Boss:** an armored robot with a missile slung over its shoulder. Its plating eats
+  laser fire — the only target is the pulsing core in its chest bay. Match the extra
+  altimeter tick that appears during the fight (the core bobs and weaves with the
+  robot), and land 6 hits before it finishes 5 missile volleys. Shots that miss the
+  core spark off the armor, and nothing can be shot past it.
 
 You get 3 ships; a bonus ship arrives at 10,000 points. Surviving the boss (or killing it, +6000) loops the level at a faster, meaner tier.
 
@@ -44,7 +48,8 @@ You get 3 ships; a bonus ship arrives at 10,000 points. Surviving the boss (or k
 
 - Each loop: Approach → Fortress 1 → Space → Fortress 2 → Boss fight
 - Fuel system with HUD altimeter and forced-descent on empty
-- Enemy types: turrets, radar dishes, missile launchers, parked planes, fighters, boss
+- Enemy types: turrets, radar dishes, missile launchers, parked planes, fighters, and an armored boss robot with an escort wing
+- Every enemy is a flat-shaded 3D model drawn through the same isometric projection as the world
 - 10-entry high-score table persisted via `localStorage`
 - Synthesized Web Audio SFX (laser, explosion, fuel pickup, klaxon, boss)
 - Difficulty scaling: each tier loop increases scroll speed, fire rate, fuel drain, and narrows wall slots
