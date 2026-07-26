@@ -194,7 +194,19 @@ function collide(game: Game): void {
         // The boss body (kind==='boss') is an invulnerable pass-through shield:
         // shots continue scanning so the core ahead of it can be targeted.
         // Zap holes are holes — nothing to destroy; shots pass over.
-        if (e.kind === 'boss' || e.kind === 'zapHole') continue;
+        if (e.kind === 'boss') {
+          // Deflect visibly off the armor, once per shot: only on the frame the
+          // swept interval crosses the near face. Sparking every frame the shot
+          // spends inside a 12-deep body would drain the 12-slot impact pool and
+          // swallow other effects — including the kill fireball.
+          const face = e.y - e.hd - p.hd;
+          if (p.yPrev <= face && p.y > face) {
+            spawnImpact(game.impacts, p.x, face, p.z);
+            play('wallHit');
+          }
+          continue;
+        }
+        if (e.kind === 'zapHole') continue;
         p.live = false;
         if (e.kind === 'wall' || e.kind === 'barrier') {
           // walls block shots — burst on the wall's near face
@@ -211,6 +223,9 @@ function collide(game: Game): void {
           play('explosion');
           onKill(game, e);
         } else if (e.kind === 'bossCore') {
+          // weak point took a hit but survived — a burst clearly smaller than
+          // the kill fireball (scale 6), so "hit" reads differently from "dead"
+          spawnImpact(game.impacts, e.x, e.y, e.z, 2.5, 0.4);
           play('bossHit');
         }
         break;

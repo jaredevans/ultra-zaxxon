@@ -104,6 +104,57 @@ describe('boss core reachable through invulnerable body', () => {
     expect(boom).toBeDefined();
   });
 
+  it('a non-lethal core hit spawns a visible burst, not just audio', () => {
+    const game = createGame();
+    game.ship.y = SHIP_Y;
+    const refs = spawnBoss(game.spawner, BOSS_Y)!;
+    const { core } = refs;
+
+    const p = game.pools.player[0]!;
+    p.live = true;
+    p.x = core.x;
+    p.z = core.z;
+    p.y = core.y - 2;
+    p.yPrev = p.y;
+    p.vy = 90;
+
+    game.update(1 / 60);
+
+    expect(core.hp).toBe(BOSS_CORE_HP - 1); // hit landed, boss survives
+    // a hit burst: bigger than a wall spark, smaller than the kill fireball (scale 6)
+    const hit = game.impacts.find(
+      (i) => i.live && i.scale >= 2 && i.scale < 5 && Math.abs(i.y - core.y) < 0.01,
+    );
+    expect(hit).toBeDefined();
+  });
+
+  it('shots deflect off the armor with one spark on entry, not one per frame inside', () => {
+    const game = createGame();
+    game.ship.y = SHIP_Y;
+    const refs = spawnBoss(game.spawner, BOSS_Y)!;
+    const { body, core } = refs;
+
+    const p = game.pools.player[0]!;
+    p.live = true;
+    p.x = body.x;
+    p.z = body.z; // armor altitude, nowhere near the core
+    p.y = body.y - body.hd - 2;
+    p.yPrev = p.y;
+    p.vy = 90;
+    expect(Math.abs(p.z - core.z)).toBeGreaterThan(p.hh + core.hh);
+
+    const face = body.y - body.hd - p.hd; // where the shot meets the near armor face
+    const sparksOnFace = () =>
+      game.impacts.filter((i) => i.live && i.scale === 1 && Math.abs(i.y - face) < 0.01).length;
+
+    game.update(1 / 60);
+    expect(p.live).toBe(true); // still a pass-through shield — the shot keeps flying
+    expect(sparksOnFace()).toBe(1); // it visibly sparks off the armor
+
+    game.update(1 / 60);
+    expect(sparksOnFace()).toBe(1); // still inside the body: no second spark, pool not drained
+  });
+
   it('skip-to-boss brings exactly the 3 escort fighters, not the skipped phase-2 waves', () => {
     const game = createGame();
     game.skipToBoss();
