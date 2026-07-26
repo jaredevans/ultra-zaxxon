@@ -37,7 +37,14 @@ interface MFace {
   c: string;
 }
 
-/** Axis-aligned box → its three camera-facing faces (side −x, front −y, top +z). */
+/**
+ * Axis-aligned box → its three camera-facing faces (side +x, front −y, top +z).
+ *
+ * depthKey rises with x, so +x is the face that turns toward the camera — those
+ * three faces tile the box's projected hexagon exactly. Using the −x face here
+ * instead left the lower-right facet of every box unpainted (and the `side`
+ * color never drew at all, since −y and top covered that quad afterwards).
+ */
 function boxF(
   cx: number,
   cy: number,
@@ -58,10 +65,10 @@ function boxF(
   return [
     {
       p: [
-        { x: x0, y: y0, z: z0 },
-        { x: x0, y: y1, z: z0 },
-        { x: x0, y: y1, z: z1 },
-        { x: x0, y: y0, z: z1 },
+        { x: x1, y: y0, z: z0 },
+        { x: x1, y: y1, z: z0 },
+        { x: x1, y: y1, z: z1 },
+        { x: x1, y: y0, z: z1 },
       ],
       c: side,
     },
@@ -212,19 +219,108 @@ const MODELS: Partial<Record<Entity['kind'], readonly MFace[]>> = {
   fighter: deltaModel('#e05050', '#a03030', '#5c1414', '#802020', '#70c8ff'),
   raider: deltaModel('#30b060', '#1f7a42', '#124524', '#188048', '#70c8ff', -2.5),
   parkedPlane: deltaModel('#9aa2b2', '#6f7787', '#3f4552', '#5a6272', '#70c8ff', -2.5),
+  // Boxy battle robot: squat legs, a slab torso whose dark lower bay frames the
+  // glowing weak point, blocky pauldrons with hanging arms, a visored head, and
+  // a fat orange missile slung over the near shoulder. Hand-ordered far → near:
+  // depthKey rises with x, so small-x limbs are painted before the torso and the
+  // near shoulder (with its missile) goes last. Arms and missile overhang the
+  // body AABB freely — the boss body is a pass-through shield, never collided.
   boss: [
-    ...boxF(0, 0, 0, 12, 6, 18, '#565672', '#42425a', '#30303f'),
+    // far arm: pauldron, forearm, fist
+    ...boxF(-12.5, 0, 5.5, 3, 4.5, 4, '#6e6e8c', '#54546e', '#3c3c50'),
+    ...boxF(-12.5, 0, -3, 2.4, 3.2, 5, '#5a5a76', '#46465e', '#33334a'),
+    ...boxF(-12.5, -0.5, -9.5, 2.8, 3.6, 2, '#6e6e8c', '#54546e', '#3c3c50'),
+    // far leg and foot
+    ...boxF(-6, 0, -14, 3.4, 4, 4, '#5a5a76', '#46465e', '#33334a'),
+    ...boxF(-6, -1, -17, 4.2, 4.8, 1.4, '#6e6e8c', '#54546e', '#3c3c50'),
+    // hips and torso slab
+    ...boxF(0, 0, -11, 7.5, 4.5, 1.5, '#5a5a76', '#46465e', '#33334a'),
+    ...boxF(0, 0, -1, 9.5, 5, 9, '#6e6e8c', '#54546e', '#3c3c50'),
+    // chest plate and vent slots, painted onto the torso's front face
     {
       p: [
-        { x: -9, y: -6.05, z: -10 },
-        { x: 9, y: -6.05, z: -10 },
-        { x: 9, y: -6.05, z: 10 },
-        { x: -9, y: -6.05, z: 10 },
+        { x: -7, y: -5.05, z: 0.5 },
+        { x: 7, y: -5.05, z: 0.5 },
+        { x: 7, y: -5.05, z: 6.5 },
+        { x: -7, y: -5.05, z: 6.5 },
       ],
-      c: '#33334a',
+      c: '#82829e',
     },
-    ...boxF(-12.5, 0, 8, 2, 4, 6, '#6a6a88', '#52526a', '#3e3e52'),
-    ...boxF(12.5, 0, 8, 2, 4, 6, '#6a6a88', '#52526a', '#3e3e52'),
+    {
+      p: [
+        { x: -5.5, y: -5.1, z: 2 },
+        { x: -1.5, y: -5.1, z: 2 },
+        { x: -1.5, y: -5.1, z: 5 },
+        { x: -5.5, y: -5.1, z: 5 },
+      ],
+      c: '#2a2a3c',
+    },
+    {
+      p: [
+        { x: 1.5, y: -5.1, z: 2 },
+        { x: 5.5, y: -5.1, z: 2 },
+        { x: 5.5, y: -5.1, z: 5 },
+        { x: 1.5, y: -5.1, z: 5 },
+      ],
+      c: '#2a2a3c',
+    },
+    // dark reactor bay: the weak point hangs 2 units in front of this recess,
+    // so keep it unlit and uncluttered or the pulsing core stops reading
+    {
+      p: [
+        { x: -6.5, y: -5.05, z: -10 },
+        { x: 6.5, y: -5.05, z: -10 },
+        { x: 6.5, y: -5.05, z: -3.5 },
+        { x: -6.5, y: -5.05, z: -3.5 },
+      ],
+      c: '#20202c',
+    },
+    // collar and head
+    ...boxF(0, 0, 8.5, 6, 4, 1.5, '#5a5a76', '#46465e', '#33334a'),
+    ...boxF(0, 0, 12.5, 4.5, 3.5, 4, '#8a8aa8', '#6c6c88', '#4e4e64'),
+    {
+      p: [
+        { x: -3.2, y: -3.55, z: 11.2 },
+        { x: 3.2, y: -3.55, z: 11.2 },
+        { x: 3.2, y: -3.55, z: 13.4 },
+        { x: -3.2, y: -3.55, z: 13.4 },
+      ],
+      c: '#e03030',
+    },
+    // near leg and foot
+    ...boxF(6, 0, -14, 3.4, 4, 4, '#5a5a76', '#46465e', '#33334a'),
+    ...boxF(6, -1, -17, 4.2, 4.8, 1.4, '#6e6e8c', '#54546e', '#3c3c50'),
+    // near arm: pauldron, forearm, fist
+    ...boxF(12.5, 0, 5.5, 3, 4.5, 4, '#6e6e8c', '#54546e', '#3c3c50'),
+    ...boxF(12.5, 0, -3, 2.4, 3.2, 5, '#5a5a76', '#46465e', '#33334a'),
+    ...boxF(12.5, -0.5, -9.5, 2.8, 3.6, 2, '#6e6e8c', '#54546e', '#3c3c50'),
+    // shoulder missile: launch cradle, orange body, nose cone, tail fin
+    ...boxF(12.5, 0, 9.4, 2.2, 5, 1, '#4a4a5e', '#3a3a4c', '#2c2c3a'),
+    ...boxF(12.5, -1, 12.4, 2.6, 8, 2.6, '#ffb04a', '#ff8c1a', '#c86010'),
+    {
+      p: [
+        { x: 9.9, y: -9, z: 15 },
+        { x: 15.1, y: -9, z: 15 },
+        { x: 12.5, y: -13.5, z: 12.4 },
+      ],
+      c: '#ffc978',
+    },
+    {
+      p: [
+        { x: 15.1, y: -9, z: 15 },
+        { x: 15.1, y: -9, z: 9.8 },
+        { x: 12.5, y: -13.5, z: 12.4 },
+      ],
+      c: '#c86010',
+    },
+    {
+      p: [
+        { x: 12.5, y: 4, z: 15 },
+        { x: 12.5, y: 8.5, z: 15 },
+        { x: 12.5, y: 8.5, z: 18.5 },
+      ],
+      c: '#e03030',
+    },
   ],
   bossCore: [...boxF(0, 0, 0, 2, 1.2, 2, '#ffd0d0', '#ff6060', '#c03030')],
 };
