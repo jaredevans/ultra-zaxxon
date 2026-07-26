@@ -36,7 +36,7 @@ describe('boss core reachable through invulnerable body', () => {
     expect(p.live).toBe(false);
   });
 
-  it('shot aimed at body z-plane only (not core z) passes through — body is a pass-through shield', () => {
+  it('armor eats shots aimed at the body, sparking on the near face', () => {
     const game = createGame();
     game.ship.y = SHIP_Y;
 
@@ -58,8 +58,12 @@ describe('boss core reachable through invulnerable body', () => {
 
     game.update(1 / 60);
 
-    // Fix 1b: body (kind==='boss') is now a pass-through shield — shot must still be live
-    expect(p.live).toBe(true);
+    expect(p.live).toBe(false); // the armor absorbs it — no shooting past the boss
+    const spark = game.impacts.find(
+      (i) => i.live && i.scale === 1 && Math.abs(i.y - (body.y - body.hd)) < 0.01,
+    );
+    expect(spark).toBeDefined();
+    expect(core.hp).toBe(BOSS_CORE_HP); // armor is still invulnerable — no damage through it
   });
 
   it('core hitbox is forgiving: a shot 3 units off in both x and z still connects', () => {
@@ -128,31 +132,31 @@ describe('boss core reachable through invulnerable body', () => {
     expect(hit).toBeDefined();
   });
 
-  it('shots deflect off the armor with one spark on entry, not one per frame inside', () => {
+  it('the weak point wins when one sweep reaches both it and the armor', () => {
     const game = createGame();
     game.ship.y = SHIP_Y;
     const refs = spawnBoss(game.spawner, BOSS_Y)!;
     const { body, core } = refs;
 
+    // The body is spawned before the core, so it is scanned first. A shot whose
+    // swept interval covers both must still damage the core — absorbing on the
+    // armor mid-scan would silently eat legitimate weak-point hits.
     const p = game.pools.player[0]!;
     p.live = true;
-    p.x = body.x;
-    p.z = body.z; // armor altitude, nowhere near the core
-    p.y = body.y - body.hd - 2;
+    p.x = core.x;
+    p.z = core.z;
+    p.y = body.y - 7.5;
     p.yPrev = p.y;
     p.vy = 90;
-    expect(Math.abs(p.z - core.z)).toBeGreaterThan(p.hh + core.hh);
-
-    const face = body.y - body.hd - p.hd; // where the shot meets the near armor face
-    const sparksOnFace = () =>
-      game.impacts.filter((i) => i.live && i.scale === 1 && Math.abs(i.y - face) < 0.01).length;
 
     game.update(1 / 60);
-    expect(p.live).toBe(true); // still a pass-through shield — the shot keeps flying
-    expect(sparksOnFace()).toBe(1); // it visibly sparks off the armor
 
-    game.update(1 / 60);
-    expect(sparksOnFace()).toBe(1); // still inside the body: no second spark, pool not drained
+    expect(core.hp).toBe(BOSS_CORE_HP - 1); // the hit counted
+    expect(p.live).toBe(false);
+    const armorSpark = game.impacts.find(
+      (i) => i.live && i.scale === 1 && Math.abs(i.y - (body.y - body.hd)) < 0.01,
+    );
+    expect(armorSpark).toBeUndefined(); // it hit the core, not the plating
   });
 
   it('skip-to-boss brings exactly the 3 escort fighters, not the skipped phase-2 waves', () => {

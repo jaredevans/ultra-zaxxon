@@ -188,22 +188,18 @@ function collide(game: Game): void {
   // 4. player projectiles vs targets, 5. vs walls
   for (const p of pools.player) {
     if (!p.live) continue;
+    // Boss armor absorbs shots, but the weak point outranks it: entity order is
+    // not sorted by y and the body is spawned first, so a sweep covering both
+    // would lose a legitimate core hit if the armor claimed the shot mid-scan.
+    // Defer absorption until the whole scan has had its chance.
+    let armor: Entity | null = null;
     for (const e of spawner.entities) {
       if (!e.live) continue;
       if (projectileHit(p, e)) {
-        // The boss body (kind==='boss') is an invulnerable pass-through shield:
-        // shots continue scanning so the core ahead of it can be targeted.
-        // Zap holes are holes — nothing to destroy; shots pass over.
+        // The boss body (kind==='boss') is invulnerable armor — it stops shots
+        // but never takes damage. Zap holes are holes: shots pass over.
         if (e.kind === 'boss') {
-          // Deflect visibly off the armor, once per shot: only on the frame the
-          // swept interval crosses the near face. Sparking every frame the shot
-          // spends inside a 12-deep body would drain the 12-slot impact pool and
-          // swallow other effects — including the kill fireball.
-          const face = e.y - e.hd - p.hd;
-          if (p.yPrev <= face && p.y > face) {
-            spawnImpact(game.impacts, p.x, face, p.z);
-            play('wallHit');
-          }
+          armor = e;
           continue;
         }
         if (e.kind === 'zapHole') continue;
@@ -230,6 +226,12 @@ function collide(game: Game): void {
         }
         break;
       }
+    }
+    // nothing else claimed the shot: the plating stops it, sparking on impact
+    if (armor && p.live) {
+      p.live = false;
+      spawnImpact(game.impacts, p.x, Math.min(p.y, armor.y - armor.hd), p.z);
+      play('wallHit');
     }
   }
 }
